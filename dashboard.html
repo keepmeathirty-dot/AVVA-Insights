@@ -2,58 +2,763 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AVVA Insights · Sign In</title>
+<title>AVVA Insights</title>
+<meta name="description" content="AVVA Insights — adaptive visibility system">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px}
-*{box-sizing:border-box;margin:0;padding:0}
-body{
-  min-height:100vh;
-  background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 55%,#4c1d95 100%);
-  color:#e2e8f0;
-  display:flex;align-items:center;justify-content:center;
-  padding:24px;
+:root{
+  --accent-primary:#4f25d8;
+  --accent-light:#f0eeff;
+  --accent-mid:#6845e8;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;
+  color:#16213d;background:#f8faff;font-size:14px;
 }
-.card{
-  width:min(440px,100%);
-  background:rgba(255,255,255,0.04);
-  backdrop-filter:blur(14px);
-  border:1px solid rgba(255,255,255,0.08);
-  border-radius:18px;
-  padding:44px 40px;
-  box-shadow:0 30px 60px rgba(0,0,0,0.4);
-  text-align:center;
+*{box-sizing:border-box}body{margin:0}button,input{font:inherit}button{cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent-mid);outline-offset:2px}
+.app{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100vh}
+.sidebar{background:#fff;border-right:1px solid #e9ecf5;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:25px 12px 12px;z-index:5}
+.brand{font-size:30px;letter-spacing:.17em;line-height:.85;margin:3px 14px 36px;font-weight:300;color:#111a35}
+.brand small{display:block;font-size:10px;letter-spacing:.36em;font-weight:700;margin-top:8px}
+.nav{display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1}
+.nav button{background:transparent;border:0;text-align:left;color:#344260;padding:11px 13px;min-height:40px;border-radius:9px;display:flex;align-items:center;gap:12px;font-weight:550}
+.nav button:hover,.nav button.active{background:var(--accent-light);color:var(--accent-primary)}
+.nav .ico{width:19px;text-align:center;color:inherit;font-size:17px}
+.section-label{font-size:10px;color:#7888a9;letter-spacing:.11em;font-weight:800;margin:22px 14px 7px}
+.sidebar-bottom{margin-top:auto;border:1px solid #e9ecf4;border-radius:11px;padding:13px;background:#fcfdff}
+.sidebar-bottom b{display:block;margin-bottom:5px}.sidebar-bottom span{font-size:12px;color:#71809c}
+.main{min-width:0}.topbar{height:72px;background:#fff;border-bottom:1px solid #ebedf4;display:flex;align-items:center;padding:0 25px;gap:16px}
+.workspace-wrap{position:relative}
+.workspace-switch{border:1px solid #e5e9f2;border-radius:10px;background:#fff;padding:9px 12px;display:flex;gap:12px;align-items:center;min-width:230px;cursor:pointer;text-align:left}
+.workspace-switch i{font-style:normal;font-size:23px;color:var(--accent-primary);background:var(--accent-light);border-radius:8px;padding:4px}
+.workspace-switch small{display:block;color:#60708b;font-size:11px}
+.workspace-switch strong{display:block;font-size:13px;margin-top:2px}
+.workspace-menu{position:absolute;top:100%;left:0;margin-top:6px;background:#fff;border:1px solid #e5e9f2;border-radius:10px;box-shadow:0 12px 32px #2530521f;padding:6px;min-width:300px;display:none;z-index:100}
+.workspace-menu.show{display:block}
+.workspace-menu button{display:block;width:100%;background:transparent;border:0;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer}
+.workspace-menu button:hover,.workspace-menu button.active{background:var(--accent-light)}
+.workspace-menu strong{display:block;font-size:13px;color:#1f2d4d}
+.workspace-menu span{font-size:11px;color:#70809b}
+.top-title{border-left:1px solid #edf0f5;padding-left:17px;min-width:0}
+.top-title h1{font-size:16px;margin:0 0 4px}.top-title p{font-size:12px;color:#71809c;margin:0}
+.top-actions{margin-left:auto;display:flex;gap:13px;align-items:center}
+.search-wrap{position:relative}
+.search{height:37px;border:1px solid #e3e8f1;border-radius:8px;padding:0 10px;width:240px}
+.search-matches{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e3e8f1;border-radius:8px;margin-top:4px;padding:8px;font-size:11px;color:#536382;display:none;box-shadow:0 8px 20px #25305211;z-index:50}
+.search-matches.show{display:block}.search-matches b{color:var(--accent-primary)}
+.circle-button{border:0;background:#fff;font-size:18px;color:#536382}
+.avatar{background:#16b8ad;color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:12px}
+.profile{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}
+.profile small{display:block;color:#71809c}
+.signout{font-size:11px;color:#94a3b8;text-decoration:none;margin-left:12px;padding:6px 10px;border-radius:6px;border:1px solid #e5e9f2;cursor:pointer;background:#fff}
+.signout:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+.content{padding:14px 24px 28px;max-width:1720px;margin:auto}
+.sample{display:flex;align-items:center;gap:9px;background:var(--accent-light);color:var(--accent-primary);padding:9px 13px;border-radius:9px;font-size:12px;margin-bottom:12px}
+.metrics{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.card{background:#fff;border:1px solid #e9edf5;border-radius:10px;box-shadow:0 2px 10px #24316005}
+.metric{min-height:112px;padding:13px 12px;display:flex;gap:9px;align-items:flex-start}
+.metric-icon{border-radius:9px;min-width:33px;height:33px;display:grid;place-items:center;font-size:19px}
+.purple{color:#6935ed;background:#f2edff}.teal{color:#00a8a2;background:#e6f8f6}.gold{color:#ef9900;background:#fff7e3}
+.green{color:#32ad27;background:#edfaeb}.cyan{color:#1da9be;background:#e9f8fb}.red{color:#dc2626;background:#fee2e2}
+.metric label{font-size:11px;color:#23314c;font-weight:700;line-height:1.25;display:block;min-height:29px}
+.metric .value{font-size:21px;letter-spacing:-.04em;margin:4px 0 3px;white-space:nowrap}
+.metric .change{font-size:10px;color:#148b42;white-space:nowrap}.metric .change span{color:#687994}
+.grid{display:grid;grid-template-columns:minmax(0,1.52fr) minmax(345px,.98fr) minmax(250px,.66fr);gap:10px;align-items:stretch}
+.panel{padding:14px;min-width:0}.panel h2{font-size:14px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:#70809b;font-size:11px;margin:0}
+.map-panel{height:560px;display:flex;flex-direction:column}
+.map-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.map-layers-inline{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#364560;margin-top:6px}
+.map-layers-inline label{display:flex;gap:5px;align-items:center;cursor:pointer}
+.map-layers-inline input{accent-color:var(--accent-mid)}
+.geo-toggle{display:flex;border:1px solid #e9ecf3;border-radius:9px;padding:3px;gap:2px;font-size:11px;margin-top:6px}
+.geo-toggle button{border:0;background:transparent;padding:5px 9px;border-radius:6px;color:#394760;font-size:11px;cursor:pointer}
+.geo-toggle button.active{background:var(--accent-light);color:var(--accent-primary)}
+.map-wrap{position:relative;flex:1;min-height:0;overflow:hidden;margin-top:8px}
+#map{position:absolute;inset:0;border-radius:8px;background:#f0f4ff}
+.leaflet-tile{filter:grayscale(15%) brightness(1.03) contrast(0.95)}
+.map-legend{position:absolute;bottom:14px;left:13px;background:#fffffff0;padding:10px;border:1px solid #e6eaf2;border-radius:8px;font-size:10px;z-index:1000}
+.gradient{width:98px;height:6px;display:inline-block;margin:0 5px 2px;border-radius:3px}
+.map-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.periods{display:flex;border:1px solid #e9ecf3;border-radius:9px;padding:4px;gap:2px}
+.periods button{border:0;background:transparent;padding:5px 9px;font-size:11px;border-radius:6px;color:#394760;cursor:pointer}
+.periods button.active{background:var(--accent-light);color:var(--accent-primary)}
+.date{border:1px solid #e9ecf3;border-radius:9px;padding:9px 11px;font-size:11px;margin-left:auto}
+.zoom-panel{height:560px;display:flex;flex-direction:column}
+.zoom-content{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.district-detail{border:1px solid #e9edf3;border-radius:8px;padding:12px;background:#fafbff;min-height:120px}
+.district-detail .placeholder{color:#8b96ad;font-size:12px;text-align:center;padding:26px 0}
+.district-detail h3{margin:0 0 10px;font-size:14px;color:var(--accent-primary)}
+.detail-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e9edf3;font-size:11px}
+.detail-row:last-child{border-bottom:none}
+.detail-row .label{color:#70809b}.detail-row .value{font-weight:700;color:#1f2d4d}
+.right{display:flex;flex-direction:column;gap:10px}
+.brief{flex:1}
+.brief-item{display:flex;gap:9px;align-items:flex-start;margin:12px 0;font-size:11px;line-height:1.45}
+.brief-item i{font-style:normal;background:var(--accent-light);padding:6px;border-radius:7px}
+.soft-link{width:100%;border:0;border-radius:7px;background:var(--accent-light);color:var(--accent-primary);padding:7px;font-size:10px;margin-top:5px;cursor:pointer}
+.prog{margin:10px 0;font-size:10px}.prog strong{display:block}.prog span{color:#8490a3}
+.bar-line{height:4px;background:#e9eaf2;margin:3px 0;border-radius:5px;overflow:hidden}
+.bar-line i{display:block;background:var(--accent-mid);height:100%}
+.bottom{display:grid;grid-template-columns:1.2fr 1.2fr 1.17fr 1fr;gap:10px;margin-top:10px}
+.bottom .panel{min-height:196px}
+.sdg{display:flex;gap:4px;margin:13px 0 9px}
+.sdg div{flex:1;min-height:71px;color:white;border-radius:5px;padding:7px 4px;font-size:9px;font-weight:700}
+.sdg-pcts{display:flex;justify-content:space-around;font-size:12px;font-weight:700}
+.donut{height:110px;width:110px;border-radius:50%;margin:10px auto;position:relative}
+.donut:after{content:"";position:absolute;inset:26px;border-radius:50%;background:#fff}
+.legend-row{font-size:11px;color:#5f6d84;margin:6px 0;display:flex;align-items:center;gap:6px}
+.legend-row i{display:inline-block;width:9px;height:9px;border-radius:2px}
+.chart{width:100%;height:123px}
+.line-labels{display:flex;justify-content:space-between;font-size:8px;color:#7b879c}
+.impact-row,.quality-row{display:flex;align-items:center;gap:5px;margin:11px 0;font-size:10px}
+.impact-row span:first-child{flex:1}.impact-row b{margin-left:auto}
+.spark{width:42px;height:16px}
+.quality-row span{width:115px}.quality-row .bar-line{flex:1}
+.foot{display:flex;justify-content:space-between;gap:10px;font-size:10px;color:#77859e;padding:14px 2px}
+.toast{position:fixed;right:18px;bottom:18px;background:#172243;color:white;padding:11px 15px;border-radius:9px;box-shadow:0 12px 35px #1118;z-index:2000;display:none}
+.toast.show{display:block}
+.leaflet-popup-content{font-size:12px;line-height:1.5}
+.leaflet-popup-content strong{color:var(--accent-primary)}
+@media(max-width:1350px){
+  .metrics{grid-template-columns:repeat(4,1fr)}
+  .grid{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr)}
+  .right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}
+  .bottom{grid-template-columns:repeat(2,1fr)}
 }
-.brand{font-size:44px;letter-spacing:.22em;font-weight:300;line-height:.9}
-.brand small{display:block;font-size:11px;letter-spacing:.5em;font-weight:700;margin-top:10px;color:#a78bfa}
-.tagline{font-size:13px;color:#94a3b8;margin:22px 0 8px}
-.divider{height:1px;background:linear-gradient(90deg,transparent,#334155,transparent);margin:28px 0}
-.signin-btn{
-  display:inline-block;width:100%;
-  background:linear-gradient(135deg,#7c3aed,#4f25d8);
-  color:#fff;text-decoration:none;
-  padding:14px;border-radius:11px;
-  font-weight:600;letter-spacing:.03em;font-size:14px;
-  transition:transform .15s,box-shadow .15s;
-  box-shadow:0 8px 24px rgba(124,58,237,0.4);
+@media(max-width:900px){
+  .app{display:block}
+  .sidebar{position:fixed;left:0;transform:translateX(-100%);transition:transform .2s;width:228px;box-shadow:12px 0 30px #0b174122}
+  .sidebar.open{transform:translateX(0)}
+  .topbar{padding:0 14px}.workspace-switch{min-width:0}.top-title{display:none}
+  .content{padding:14px}.search{width:170px}
+  .grid{grid-template-columns:1fr}.right{grid-column:auto}
+  .map-panel,.zoom-panel{height:480px}
 }
-.signin-btn:hover{transform:translateY(-1px);box-shadow:0 12px 30px rgba(124,58,237,0.5)}
-.foot{margin-top:30px;font-size:11px;color:#64748b;line-height:1.6}
-.foot b{color:#94a3b8}
-.pulse{display:inline-block;width:6px;height:6px;background:#22c55e;border-radius:50%;margin-right:6px;animation:pulse 1.5s infinite;vertical-align:middle}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="brand">AVVA<small>INSIGHTS</small></div>
-  <p class="tagline">Adaptive visibility for institutions driving change.</p>
-  <div class="divider"></div>
-  <a class="signin-btn" href="login.html">Sign in to your workspace →</a>
-  <div class="foot">
-    <p><span class="pulse"></span>System operational · 5 workspaces online</p>
-    <p style="margin-top:14px"><b>Reemerge Group</b> · Making Invisible Markets Visible.</p>
-    <p style="margin-top:6px">© 2026 Reemerge Group. All rights reserved.</p>
-  </div>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">AVVA<small>INSIGHTS</small></div>
+    <nav class="nav" id="nav" aria-label="Main navigation"></nav>
+    <div class="sidebar-bottom"><b>✥ &nbsp;<span id="org-name">Reemerge Group</span></b><span id="org-tagline">Making Invisible Markets Visible.</span></div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="workspace-wrap">
+        <button class="workspace-switch" id="workspace-btn">
+          <i>♙</i>
+          <span>
+            <small>Viewing as</small>
+            <strong id="workspace-label">Loading…</strong>
+          </span>
+        </button>
+        <div class="workspace-menu" id="workspace-menu"></div>
+      </div>
+      <div class="top-title"><h1 id="page-title"></h1><p id="page-subtitle"></p></div>
+      <div class="top-actions">
+        <div class="search-wrap">
+          <input class="search" id="search" aria-label="Search dashboard" placeholder="⌕  Search region, sector, programme...">
+          <div class="search-matches" id="search-matches"></div>
+        </div>
+        <button class="circle-button" id="bell" aria-label="Notifications">♧</button>
+        <div class="profile"><span class="avatar" id="user-initials">—</span><span id="user-name">Loading…</span></div>
+        <button class="signout" id="signout">Sign out</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="sample"><strong>PROTOTYPE</strong><span id="data-disclaimer"></span></div>
+
+      <section class="metrics" id="metrics" aria-label="Overview metrics"></section>
+
+      <section class="grid">
+        <article class="card panel map-panel">
+          <div class="map-header">
+            <div>
+              <h2 id="map-title"></h2>
+              <p class="sub" id="map-subtitle"></p>
+            </div>
+            <div>
+              <div class="map-layers-inline" id="layer-controls"></div>
+              <div class="geo-toggle" id="geo-toggle" style="display:none">
+                <button data-geo="districts" class="active">KZN Districts</button>
+                <button data-geo="provinces">National</button>
+              </div>
+            </div>
+          </div>
+          <div class="map-wrap">
+            <div id="map"></div>
+            <div class="map-legend">Low <i class="gradient" id="legend-gradient"></i> High</div>
+          </div>
+          <div class="map-controls">
+            <div class="periods" id="periods"></div>
+            <span class="date" id="date-label"></span>
+          </div>
+        </article>
+
+        <article class="card panel zoom-panel">
+          <h2>Region Detail</h2>
+          <p class="sub" id="district-sub">Select a region on the map</p>
+          <div class="zoom-content">
+            <div class="district-detail" id="district-detail">
+              <div class="placeholder">Click any region on the map to view its metrics.</div>
+            </div>
+            <div>
+              <h3 style="font-size:11px;margin:0 0 6px;color:var(--accent-primary)" id="top-list-title">Top Regions</h3>
+              <div id="top-districts"></div>
+            </div>
+          </div>
+        </article>
+
+        <div class="right">
+          <article class="card panel brief">
+            <h2 id="brief-title"></h2>
+            <p class="sub" id="brief-sub"></p>
+            <div id="brief-items"></div>
+            <button class="soft-link">View Full Brief →</button>
+          </article>
+
+          <article class="card panel">
+            <h2 id="programmes-title"></h2>
+            <p class="sub" id="programmes-sub"></p>
+            <div id="programmes"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="bottom">
+        <article class="card panel" id="bottom-left-panel">
+          <h2 id="bottom-left-title"></h2>
+          <p class="sub" id="bottom-left-sub"></p>
+          <div id="bottom-left-body"></div>
+        </article>
+
+        <article class="card panel">
+          <h2 id="trends-title"></h2>
+          <p class="sub" id="trends-sub"></p>
+          <svg viewBox="0 0 300 120" class="chart" aria-label="Trend chart">
+            <path d="M15 100H290M15 70H290M15 40H290M15 10H290" stroke="#edf0f5"/>
+            <path d="M15 83 L38 77 60 74 83 68 106 64 129 58 152 52 175 44 198 40 221 38 244 35 267 28 290 24" fill="none" stroke="#aebbd0" stroke-width="2"/>
+            <path d="M15 96 L38 92 60 89 83 86 106 82 129 78 152 72 175 69 198 64 221 64 244 61 267 54 290 51" fill="none" stroke="var(--accent-mid)" stroke-width="2"/>
+            <path d="M15 109 L38 108 60 106 83 104 106 103 129 100 152 98 175 96 198 95 221 93 244 90 267 87 290 83" fill="none" stroke="#17b5ac" stroke-width="2"/>
+          </svg>
+          <div class="line-labels"><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
+        </article>
+
+        <article class="card panel">
+          <h2 id="impact-title"></h2>
+          <p class="sub" id="impact-sub"></p>
+          <div id="impact"></div>
+        </article>
+
+        <article class="card panel">
+          <h2 id="quality-title"></h2>
+          <p class="sub" id="quality-sub"></p>
+          <div id="quality"></div>
+        </article>
+      </section>
+
+      <footer class="foot">
+        <span><b>AVVA Insights™</b> · Economic Intelligence Platform</span>
+        <span id="foot-status"></span>
+        <span id="foot-copy"></span>
+      </footer>
+    </div>
+  </main>
 </div>
+
+<div class="toast" id="toast"></div>
+
+<script src="configs/registry.js"></script>
+<script>
+const $ = sel => document.querySelector(sel);
+
+/* ================= SESSION GATE ================= */
+const sessionRaw = localStorage.getItem('avva_session');
+if (!sessionRaw) {
+  window.location.href = 'login.html';
+  throw new Error('No session — redirecting to login');
+}
+let session;
+try { session = JSON.parse(sessionRaw); }
+catch (e) { window.location.href = 'login.html'; throw e; }
+
+/* ================= FILTER REGISTRY BY PERMISSIONS ================= */
+const registry = (window.AVVA_WORKSPACES || []).filter(w =>
+  session.workspaces.includes('*') || session.workspaces.includes(w.id)
+);
+if (!registry.length) {
+  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Your account has no workspace access. Contact your administrator.</div>';
+  throw new Error('No workspace access');
+}
+
+const params = new URLSearchParams(window.location.search);
+const requestedId = params.get("workspace");
+const activeEntry = registry.find(w => w.id === requestedId)
+                 || registry.find(w => w.default)
+                 || registry[0];
+
+/* ================= LOAD CONFIG SCRIPT ================= */
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("Failed to load " + src));
+    document.head.appendChild(s);
+  });
+}
+
+(async function boot() {
+  try {
+    await loadScript(activeEntry.configPath);
+  } catch (err) {
+    document.body.innerHTML = `<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load workspace config: ${activeEntry.configPath}</div>`;
+    console.error(err);
+    return;
+  }
+  const C = window.AVVA_CONFIG;
+  if (!C) {
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config loaded but window.AVVA_CONFIG is undefined.</div>';
+    return;
+  }
+  renderAll(C);
+})();
+
+/* ================= MAIN RENDER ================= */
+function renderAll(C) {
+  if (C.accent) {
+    document.documentElement.style.setProperty('--accent-primary', C.accent.primary);
+    document.documentElement.style.setProperty('--accent-light', C.accent.light);
+    document.documentElement.style.setProperty('--accent-mid', C.accent.mid);
+  }
+
+  document.title = `AVVA Insights · ${C.workspaceName}`;
+  $('#org-name').textContent = C.org.name;
+  $('#org-tagline').textContent = C.org.tagline;
+  $('#workspace-label').textContent = C.workspaceName;
+  $('#page-title').textContent = C.pageTitle;
+  $('#page-subtitle').textContent = C.pageSubtitle;
+  $('#data-disclaimer').textContent = C.dataDisclaimer;
+  $('#foot-status').textContent = `Prototype · ready for live API connection`;
+  $('#foot-copy').textContent = `© 2026 ${C.org.name}`;
+  $('#map-title').textContent = C.map.title;
+  $('#map-subtitle').textContent = C.map.subtitle;
+  $('#brief-title').textContent = C.brief.title;
+  $('#brief-sub').textContent = C.brief.subtitle;
+  $('#programmes-title').textContent = C.programmes.title;
+  $('#programmes-sub').textContent = C.programmes.subtitle;
+  $('#trends-title').innerHTML = `${C.trends.title} <span style="font-weight:400;color:#71809c">${C.trends.period}</span>`;
+  $('#trends-sub').textContent = C.trends.subtitle;
+  $('#impact-title').textContent = C.impact.title;
+  $('#impact-sub').textContent = C.impact.subtitle;
+  $('#quality-title').textContent = C.quality.title;
+  $('#quality-sub').textContent = C.quality.subtitle;
+  $('#top-list-title').textContent = `Top Regions by ${C.primaryMetricLabel}`;
+
+  /* ---------- User profile from session ---------- */
+  $('#user-initials').textContent = (session.name || 'U').split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase();
+  $('#user-name').innerHTML = `${session.name}<small>${session.role}</small>`;
+
+  /* ---------- Sign out ---------- */
+  $('#signout').addEventListener('click', () => {
+    localStorage.removeItem('avva_session');
+    window.location.href = 'index.html';
+  });
+
+  /* ---------- Workspace switcher menu ---------- */
+  const menu = $('#workspace-menu');
+  menu.innerHTML = registry.map(w => `
+    <button data-ws="${w.id}" class="${w.id === C.id ? 'active' : ''}">
+      <strong>${w.label}</strong>
+      <span>${w.description}</span>
+    </button>
+  `).join('');
+  menu.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      const id = b.dataset.ws;
+      if (id === C.id) { menu.classList.remove('show'); return; }
+      window.location.href = `dashboard.html?workspace=${id}`;
+    });
+  });
+  $('#workspace-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    menu.classList.toggle('show');
+  });
+  document.addEventListener('click', () => menu.classList.remove('show'));
+
+  /* ---------- Sidebar ---------- */
+  const nav = $('#nav');
+  let firstBtn = null;
+  C.navigation.forEach(group => {
+    if (group.section) {
+      const lbl = document.createElement('div');
+      lbl.className = 'section-label';
+      lbl.textContent = group.section;
+      nav.appendChild(lbl);
+    }
+    group.items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.dataset.view = item.id;
+      btn.dataset.label = item.label;
+      btn.innerHTML = `<span class="ico">${item.icon}</span>${item.label}`;
+      nav.appendChild(btn);
+      if (!firstBtn) firstBtn = btn;
+    });
+  });
+  if (firstBtn) firstBtn.classList.add('active');
+
+  /* ---------- Periods ---------- */
+  const periodsEl = $('#periods');
+  C.periods.forEach(p => {
+    const btn = document.createElement('button');
+    btn.textContent = p;
+    if (p === C.defaultPeriod) btn.classList.add('active');
+    periodsEl.appendChild(btn);
+  });
+  $('#date-label').textContent = `Reporting period · ${C.defaultPeriod}　▣`;
+
+  /* ---------- Layers ---------- */
+  const layersEl = $('#layer-controls');
+  C.layers.forEach(l => {
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" data-layer="${l.id}" ${l.default ? 'checked' : ''}>${l.label}`;
+    layersEl.appendChild(label);
+  });
+
+  /* ---------- Legend ---------- */
+  $('#legend-gradient').style.background = `linear-gradient(90deg, ${C.colourScale.join(', ')})`;
+
+  /* ---------- Aggregate totals ---------- */
+  const primaryData = C.districts;
+  const names = Object.keys(primaryData);
+  const totals = names.reduce((acc, n) => {
+    const d = primaryData[n];
+    for (const k in d) {
+      if (typeof d[k] === 'number') acc[k] = (acc[k] || 0) + d[k];
+    }
+    return acc;
+  }, {});
+  for (const m of C.metrics) {
+    if (m.aggregate === 'average' && totals[m.id] !== undefined) {
+      totals[m.id] = Math.round(totals[m.id] / names.length);
+    }
+  }
+
+  function fmtNumber(n) { return n.toLocaleString('en-ZA'); }
+  function fmtCurrencyM(n) { return 'R' + Math.round(n / 1_000_000) + 'm'; }
+
+  /* ---------- KPI cards ---------- */
+  $('#metrics').innerHTML = C.metrics.map(m => `
+    <div class="card metric">
+      <span class="metric-icon ${m.colour}">${m.icon}</span>
+      <div>
+        <label>${m.label}</label>
+        <div class="value" data-metric="${m.id}">0</div>
+        <div class="change">↑ updated <span>this period</span></div>
+      </div>
+    </div>
+  `).join('');
+
+  function animate(el, target, duration = 1400, prefix = '', suffix = '', useLocale = true) {
+    const start = performance.now();
+    function tick(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const val = Math.floor(target * eased);
+      el.textContent = prefix + (useLocale ? val.toLocaleString('en-ZA') : val) + suffix;
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = prefix + (useLocale ? target.toLocaleString('en-ZA') : target) + suffix;
+    }
+    requestAnimationFrame(tick);
+  }
+
+  C.metrics.forEach(m => {
+    const el = document.querySelector(`[data-metric="${m.id}"]`);
+    if (!el) return;
+    if (m.format === 'static') { el.textContent = m.value; return; }
+    const raw = totals[m.id];
+    if (raw === undefined) return;
+    if (m.format === 'currency-m') animate(el, Math.round(raw / 1_000_000), 1400, 'R', 'm', false);
+    else if (m.format === 'percent') animate(el, raw, 1400, '', '%', false);
+    else animate(el, raw);
+  });
+
+  /* ---------- Brief ---------- */
+  $('#brief-items').innerHTML = C.brief.items.map(i => `
+    <div class="brief-item"><i>${i.icon}</i><span>${i.html}</span></div>
+  `).join('');
+
+  /* ---------- Programmes ---------- */
+  $('#programmes').innerHTML = C.programmes.items.map(([name, count, pct]) => `
+    <div class="prog">
+      <strong>• ${name}</strong>
+      <span>${count} · ${pct}% progress</span>
+      <div class="bar-line"><i style="width:${pct}%"></i></div>
+    </div>
+  `).join('');
+
+  /* ---------- Bottom-left ---------- */
+  renderBottomLeft(C);
+
+  /* ---------- Impact ---------- */
+  $('#impact').innerHTML = C.impact.items.map(([label, val]) => {
+    let display = val;
+    if (typeof val === 'string' && val.startsWith('auto:')) {
+      const key = val.slice(5);
+      display = fmtNumber(totals[key] || 0);
+    }
+    return `
+      <div class="impact-row">
+        <span>${label}</span><b>${display}</b>
+        <svg class="spark" viewBox="0 0 42 16"><path d="M0 12L6 9 11 11 17 4 22 8 29 3 34 7 42 2" stroke="#29ac68" fill="none"/></svg>
+      </div>
+    `;
+  }).join('');
+
+  /* ---------- Data quality ---------- */
+  $('#quality').innerHTML = C.quality.items.map(([label, pct]) => `
+    <div class="quality-row">
+      <span>${label}</span>
+      <div class="bar-line"><i style="width:${pct}%;background:#36bd60"></i></div>
+      <b>${pct}%</b>
+    </div>
+  `).join('');
+
+  /* ---------- Top regions ---------- */
+  const primaryKey = C.primaryMetric;
+  const sorted = Object.entries(primaryData).sort((a, b) => b[1][primaryKey] - a[1][primaryKey]);
+  const maxVal = sorted[0][1][primaryKey];
+  $('#top-districts').innerHTML = sorted.slice(0, 5).map(([name, d]) => {
+    const val = d[primaryKey];
+    const display = (primaryKey === 'revenue' || primaryKey === 'funding')
+      ? fmtCurrencyM(val) : fmtNumber(val);
+    return `
+      <div class="prog">
+        <strong>${name}</strong>
+        <span>${display} ${C.primaryMetricLabel.toLowerCase()}</span>
+        <div class="bar-line"><i style="width:${(val / maxVal * 100).toFixed(0)}%"></i></div>
+      </div>
+    `;
+  }).join('');
+
+  /* ================= LEAFLET MAP ================= */
+  const map = L.map('map', {
+    center: C.map.center,
+    zoom: C.map.zoom,
+    zoomControl: false,
+    scrollWheelZoom: true
+  });
+  L.control.zoom({ position: 'topright' }).addTo(map);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(map);
+
+  function hexToRgb(hex) {
+    const h = hex.replace('#', '');
+    return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+  }
+  function lerp(a, b, t) { return Math.round(a + (b - a) * t); }
+  const scaleRgb = C.colourScale.map(hexToRgb);
+  function getColour(value, min, max) {
+    const t = Math.max(0, Math.min(1, (value - min) / (max - min || 1)));
+    const segments = scaleRgb.length - 1;
+    const seg = Math.min(Math.floor(t * segments), segments - 1);
+    const local = t * segments - seg;
+    const [r1, g1, b1] = scaleRgb[seg];
+    const [r2, g2, b2] = scaleRgb[seg + 1];
+    return `rgb(${lerp(r1,r2,local)},${lerp(g1,g2,local)},${lerp(b1,b2,local)})`;
+  }
+
+  let currentLayer = null;
+  let currentData = null;
+
+  function buildLayer(dataObj, metricKey) {
+    const nms = Object.keys(dataObj);
+    const values = nms.map(n => dataObj[n][metricKey]);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    const features = nms.map(name => {
+      const d = dataObj[name];
+      const [[south, west], [north, east]] = d.bounds;
+      return {
+        type: "Feature",
+        properties: { name, ...d },
+        geometry: {
+          type: "Polygon",
+          coordinates: [[
+            [west, south], [east, south], [east, north],
+            [west, north], [west, south]
+          ]]
+        }
+      };
+    });
+    const geojson = { type: "FeatureCollection", features };
+
+    if (currentLayer) map.removeLayer(currentLayer);
+
+    currentLayer = L.geoJSON(geojson, {
+      style: feature => ({
+        fillColor: getColour(feature.properties[metricKey], min, max),
+        weight: 1.5,
+        opacity: 0.9,
+        color: '#ffffff',
+        fillOpacity: 0.78
+      }),
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties;
+        const val = p[metricKey];
+        const valDisplay = (metricKey === 'revenue' || metricKey === 'funding')
+          ? fmtCurrencyM(val) : fmtNumber(val);
+        layer.bindTooltip(
+          `<strong>${p.name}</strong><br>${valDisplay} ${C.primaryMetricLabel.toLowerCase()}`,
+          { sticky: true }
+        );
+        layer.on({
+          mouseover: e => e.target.setStyle({ weight: 3, color: C.accent.primary, fillOpacity: 0.9 }),
+          mouseout: e => currentLayer.resetStyle(e.target),
+          click: () => showDetail(p)
+        });
+      }
+    }).addTo(map);
+
+    currentData = dataObj;
+  }
+
+  function showDetail(p) {
+    const rows = Object.entries(p)
+      .filter(([k, v]) => k !== 'bounds' && k !== 'name' && typeof v !== 'object')
+      .map(([k, v]) => {
+        const label = k.charAt(0).toUpperCase() + k.slice(1);
+        const display = (k === 'revenue' || k === 'funding')
+          ? 'R' + (v / 1_000_000).toFixed(1) + 'm'
+          : typeof v === 'number' ? fmtNumber(v) : v;
+        return `<div class="detail-row"><span class="label">${label}</span><span class="value">${display}</span></div>`;
+      }).join('');
+    $('#district-sub').textContent = `${C.workspaceName} · ${p.name}`;
+    $('#district-detail').innerHTML = `<h3>${p.name}</h3>${rows}`;
+  }
+
+  buildLayer(C.districts, C.primaryMetric);
+
+  /* ---------- Geo toggle ---------- */
+  const geoToggle = $('#geo-toggle');
+  if (C.geoScope === 'both' && C.provinces) {
+    geoToggle.style.display = 'flex';
+    geoToggle.querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        geoToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (btn.dataset.geo === 'provinces') {
+          buildLayer(C.provinces, C.primaryMetric);
+          map.setView([-29.0, 24.0], 5);
+        } else {
+          buildLayer(C.districts, C.primaryMetric);
+          map.setView(C.map.center, C.map.zoom);
+        }
+      });
+    });
+  }
+
+  /* ---------- Search ---------- */
+  const searchInput = $('#search');
+  const searchMatches = $('#search-matches');
+  searchInput.addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) {
+      if (currentLayer) currentLayer.eachLayer(l => currentLayer.resetStyle(l));
+      searchMatches.classList.remove('show');
+      return;
+    }
+    const nms = Object.keys(currentData);
+    const matches = nms.filter(n => n.toLowerCase().includes(q));
+    currentLayer.eachLayer(layer => {
+      const nm = layer.feature.properties.name;
+      if (matches.includes(nm)) {
+        layer.setStyle({ fillOpacity: 0.95, weight: 3, color: C.accent.primary, opacity: 1 });
+      } else {
+        layer.setStyle({ fillOpacity: 0.12, weight: 1, color: '#cbd5e1', opacity: 0.6 });
+      }
+    });
+    searchMatches.innerHTML = matches.length
+      ? `<b>${matches.length}</b> match${matches.length > 1 ? 'es' : ''}: ${matches.join(', ')}`
+      : `No matches for "<b>${q}</b>"`;
+    searchMatches.classList.add('show');
+  });
+  searchInput.addEventListener('blur', () => setTimeout(() => searchMatches.classList.remove('show'), 200));
+  searchInput.addEventListener('focus', () => { if (searchInput.value.trim()) searchMatches.classList.add('show'); });
+
+  /* ---------- Toast ---------- */
+  const toastEl = $('#toast');
+  let toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+  }
+
+  document.querySelectorAll('#nav button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#nav button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      $('#page-title').textContent = btn.dataset.label === 'Command Centre' ? C.pageTitle : btn.dataset.label;
+      toast(`${btn.dataset.label} · preview`);
+    });
+  });
+
+  document.querySelectorAll('#periods button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#periods button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      $('#date-label').textContent = `Reporting period · ${btn.textContent}　▣`;
+      toast(`${btn.textContent} view selected`);
+    });
+  });
+
+  document.querySelectorAll('[data-layer]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const label = cb.parentElement.textContent.trim();
+      toast(`${label} ${cb.checked ? 'shown' : 'hidden'}`);
+    });
+  });
+
+  $('#bell').addEventListener('click', () => toast('No live notifications in this prototype'));
+}
+
+/* ================= BOTTOM-LEFT PANEL ================= */
+function renderBottomLeft(C) {
+  const bl = C.bottomLeft;
+  if (!bl) return;
+  $('#bottom-left-title').textContent = bl.title;
+  $('#bottom-left-sub').textContent = bl.subtitle;
+  const body = $('#bottom-left-body');
+
+  if (bl.type === 'sdg') {
+    body.innerHTML = `
+      <div class="sdg">${bl.tiles.map(([n, l, c]) => `<div style="background:${c}">${n}<br>${l}</div>`).join('')}</div>
+      <div class="sdg-pcts">${bl.percentages.map(p => `<span>${p}</span>`).join('')}</div>
+    `;
+  } else if (bl.type === 'channels') {
+    let cumulative = 0;
+    const stops = bl.channels.map(ch => {
+      const start = cumulative;
+      cumulative += ch.value;
+      return `${ch.colour} ${start}% ${cumulative}%`;
+    }).join(', ');
+    body.innerHTML = `
+      <div class="donut" style="background:conic-gradient(${stops})"></div>
+      ${bl.channels.map(ch => `
+        <div class="legend-row"><i style="background:${ch.colour}"></i>${ch.label} — ${ch.value}%</div>
+      `).join('')}
+    `;
+  }
+}
+</script>
 </body>
 </html>
