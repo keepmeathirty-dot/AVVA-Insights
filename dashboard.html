@@ -901,8 +901,36 @@ function getPostedProgrammes(workspaceId) {
 }
 
 function renderProgrammes(C) {
-  const baseline = C.programmes.items || [];
-  const posted = getPostedProgrammes(C.id);
+  try {
+    const baseline = C.programmes.items || [];
+    const posted = getPostedProgrammes(C.id);
+
+    console.log('[AVVA] Rendering programmes for', C.id, '— posted:', posted.length, 'baseline:', baseline.length);
+
+    const postedHtml = posted.map(p => `
+      <div class="prog" style="border-left:3px solid var(--accent-primary);padding-left:8px">
+        <strong>+ ${p.name || 'Untitled programme'}</strong>
+        <span>${p.type || 'Programme'} · ${p.budget ? 'R' + Number(p.budget).toLocaleString('en-ZA') : 'Budget TBC'} · ${p.status || 'Active'}</span>
+        <div class="bar-line"><i style="width:100%;background:var(--accent-primary)"></i></div>
+      </div>
+    `).join('');
+
+    const baselineHtml = baseline.map(([name, count, pct]) => `
+      <div class="prog">
+        <strong>• ${name}</strong>
+        <span>${count} · ${pct}% progress</span>
+        <div class="bar-line"><i style="width:${pct}%"></i></div>
+      </div>
+    `).join('');
+
+    const el = document.getElementById('programmes');
+    if (!el) { console.warn('[AVVA] #programmes element not found'); return; }
+    el.innerHTML = postedHtml + baselineHtml;
+    console.log('[AVVA] Programmes rendered:', posted.length + baseline.length);
+  } catch (err) {
+    console.error('[AVVA] renderProgrammes failed:', err);
+  }
+}
 
   const baselineHtml = baseline.map(([name, count, pct]) => `
     <div class="prog">
