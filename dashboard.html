@@ -6,13 +6,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-:root{
-  --accent-primary:#4f25d8;
-  --accent-light:#f0eeff;
-  --accent-mid:#6845e8;
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;
-  color:#16213d;background:#f8faff;font-size:14px;
-}
+:root{--accent-primary:#4f25d8;--accent-light:#f0eeff;--accent-mid:#6845e8;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:#16213d;background:#f8faff;font-size:14px}
 *{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button{cursor:pointer}
 button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--accent-mid);outline-offset:2px}
 .app{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100vh}
@@ -47,7 +41,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .search-matches{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e3e8f1;border-radius:8px;margin-top:4px;padding:8px;font-size:11px;color:#536382;display:none;box-shadow:0 8px 20px #25305211;z-index:50}
 .search-matches.show{display:block}.search-matches b{color:var(--accent-primary)}
 .circle-button{border:0;background:#fff;font-size:18px;color:#536382;position:relative}
-.circle-button .dot{position:absolute;top:4px;right:4px;width:8px;height:8px;background:#ef4444;border-radius:50%}
 .avatar{background:#16b8ad;color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:12px}
 .profile{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}
 .profile small{display:block;color:#71809c}
@@ -99,7 +92,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .brief-item{display:flex;gap:9px;align-items:flex-start;margin:12px 0;font-size:11px;line-height:1.45}
 .brief-item i{font-style:normal;background:var(--accent-light);padding:6px;border-radius:7px}
 .soft-link{width:100%;border:0;border-radius:7px;background:var(--accent-light);color:var(--accent-primary);padding:7px;font-size:10px;margin-top:5px;cursor:pointer}
-.prog{margin:10px 0;font-size:10px}.prog strong{display:block}.prog span{color:#8490a3}
+.prog{margin:10px 0;font-size:10px;position:relative}.prog strong{display:block}.prog span{color:#8490a3}
+.prog-delete{position:absolute;top:0;right:0;background:transparent;border:0;color:#dc2626;cursor:pointer;font-size:14px;padding:2px 6px;opacity:.6}
+.prog-delete:hover{opacity:1}
 .bar-line{height:4px;background:#e9eaf2;margin:3px 0;border-radius:5px;overflow:hidden}
 .bar-line i{display:block;background:var(--accent-mid);height:100%}
 .bottom{display:grid;grid-template-columns:1.2fr 1.2fr 1.17fr 1fr;gap:10px;margin-top:10px}
@@ -135,11 +130,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .btn-secondary{background:#fff;color:#4a5568;border:1px solid #e5e9f2;border-radius:8px;padding:9px 14px;font-weight:600;font-size:12px;cursor:pointer}
 .btn-secondary:hover{background:#f8faff}
 .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.card-item{padding:16px;border:1px solid #e9edf5;border-radius:10px;background:#fff;box-shadow:0 2px 10px #24316005;cursor:pointer;transition:transform .12s}
+.card-item{padding:16px;border:1px solid #e9edf5;border-radius:10px;background:#fff;box-shadow:0 2px 10px #24316005;cursor:pointer;transition:transform .12s;position:relative}
 .card-item:hover{transform:translateY(-2px);border-color:var(--accent-mid)}
 .card-item h4{margin:0 0 6px;font-size:13px}
 .card-item p{margin:0 0 10px;font-size:11px;color:#70809b;line-height:1.5}
 .card-item .meta{display:flex;justify-content:space-between;font-size:10px;color:#94a3b8}
+.card-delete{position:absolute;top:10px;right:10px;background:transparent;border:0;color:#dc2626;cursor:pointer;font-size:14px;opacity:.6}
+.card-delete:hover{opacity:1}
 .slideout{position:fixed;top:0;right:0;height:100vh;width:min(520px,100%);background:#fff;box-shadow:-20px 0 60px rgba(15,23,42,.2);transform:translateX(100%);transition:transform .25s ease;z-index:1500;display:flex;flex-direction:column}
 .slideout.open{transform:translateX(0)}
 .slideout-head{padding:20px 24px;border-bottom:1px solid #e9edf3;display:flex;justify-content:space-between;align-items:center}
@@ -170,24 +167,9 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .toast{position:fixed;right:18px;bottom:18px;background:#172243;color:white;padding:11px 15px;border-radius:9px;box-shadow:0 12px 35px #1118;z-index:2000;display:none}
 .toast.show{display:block}
 .leaflet-popup-content{font-size:12px;line-height:1.5}
-.leaflet-popup-content strong{color:var(--accent-primary)}
 .empty-state{text-align:center;padding:60px 20px;color:#94a3b8;font-size:13px}
-@media(max-width:1350px){
-  .metrics{grid-template-columns:repeat(4,1fr)}
-  .grid{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr)}
-  .right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}
-  .bottom{grid-template-columns:repeat(2,1fr)}
-}
-@media(max-width:900px){
-  .app{display:block}
-  .sidebar{position:fixed;left:0;transform:translateX(-100%);transition:transform .2s;width:228px;box-shadow:12px 0 30px #0b174122}
-  .sidebar.open{transform:translateX(0)}
-  .topbar{padding:0 14px}.workspace-switch{min-width:0}.top-title{display:none}
-  .content{padding:14px}.search{width:170px}
-  .grid{grid-template-columns:1fr}.right{grid-column:auto}
-  .map-panel,.zoom-panel{height:480px}
-  .field-row{grid-template-columns:1fr}
-}
+@media(max-width:1350px){.metrics{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.bottom{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.app{display:block}.sidebar{position:fixed;left:0;transform:translateX(-100%);transition:transform .2s;width:228px;box-shadow:12px 0 30px #0b174122}.sidebar.open{transform:translateX(0)}.topbar{padding:0 14px}.workspace-switch{min-width:0}.top-title{display:none}.content{padding:14px}.search{width:170px}.grid{grid-template-columns:1fr}.right{grid-column:auto}.map-panel,.zoom-panel{height:480px}.field-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -197,16 +179,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
     <nav class="nav" id="nav" aria-label="Main navigation"></nav>
     <div class="sidebar-bottom"><b>✥ &nbsp;<span id="org-name">Reemerge Group</span></b><span id="org-tagline">Making Invisible Markets Visible.</span></div>
   </aside>
-
   <main class="main">
     <header class="topbar">
       <div class="workspace-wrap">
         <button class="workspace-switch" id="workspace-btn">
           <i>♙</i>
-          <span>
-            <small>Viewing as</small>
-            <strong id="workspace-label">Loading…</strong>
-          </span>
+          <span><small>Viewing as</small><strong id="workspace-label">Loading…</strong></span>
         </button>
         <div class="workspace-menu" id="workspace-menu"></div>
       </div>
@@ -216,26 +194,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <input class="search" id="search" aria-label="Search dashboard" placeholder="⌕  Search region, sector, programme...">
           <div class="search-matches" id="search-matches"></div>
         </div>
-        <button class="circle-button" id="bell" aria-label="Notifications">♧<span class="dot" id="bell-dot" style="display:none"></span></button>
+        <button class="circle-button" id="bell" aria-label="Notifications">♧</button>
         <div class="profile"><span class="avatar" id="user-initials">—</span><span id="user-name">Loading…</span></div>
         <button class="signout" id="signout">Sign out</button>
       </div>
     </header>
-
     <div class="content">
-
       <section class="view active" data-view="command">
         <div class="sample"><strong>PROTOTYPE</strong><span id="data-disclaimer"></span></div>
-
         <section class="metrics" id="metrics" aria-label="Overview metrics"></section>
-
         <section class="grid">
           <article class="card panel map-panel">
             <div class="map-header">
-              <div>
-                <h2 id="map-title"></h2>
-                <p class="sub" id="map-subtitle"></p>
-              </div>
+              <div><h2 id="map-title"></h2><p class="sub" id="map-subtitle"></p></div>
               <div>
                 <div class="map-layers-inline" id="layer-controls"></div>
                 <div class="geo-toggle" id="geo-toggle" style="display:none">
@@ -253,7 +224,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
               <span class="date" id="date-label"></span>
             </div>
           </article>
-
           <article class="card panel zoom-panel">
             <h2>Region Detail</h2>
             <p class="sub" id="district-sub">Select a region on the map</p>
@@ -267,7 +237,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
               </div>
             </div>
           </article>
-
           <div class="right">
             <article class="card panel brief">
               <h2 id="brief-title"></h2>
@@ -275,7 +244,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
               <div id="brief-items"></div>
               <button class="soft-link">View Full Brief →</button>
             </article>
-
             <article class="card panel">
               <h2 id="programmes-title"></h2>
               <p class="sub" id="programmes-sub"></p>
@@ -284,14 +252,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
             </article>
           </div>
         </section>
-
         <section class="bottom">
           <article class="card panel" id="bottom-left-panel">
             <h2 id="bottom-left-title"></h2>
             <p class="sub" id="bottom-left-sub"></p>
             <div id="bottom-left-body"></div>
           </article>
-
           <article class="card panel">
             <h2 id="trends-title"></h2>
             <p class="sub" id="trends-sub"></p>
@@ -303,33 +269,26 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
             </svg>
             <div class="line-labels"><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
           </article>
-
           <article class="card panel">
             <h2 id="impact-title"></h2>
             <p class="sub" id="impact-sub"></p>
             <div id="impact"></div>
           </article>
-
           <article class="card panel">
             <h2 id="quality-title"></h2>
             <p class="sub" id="quality-sub"></p>
             <div id="quality"></div>
           </article>
         </section>
-
         <footer class="foot">
           <span><b>AVVA Insights™</b> · Economic Intelligence Platform</span>
           <span id="foot-status"></span>
           <span id="foot-copy"></span>
         </footer>
       </section>
-
       <section class="view" data-view="table">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-          <div>
-            <h1 id="table-title" style="font-size:22px;margin:0 0 4px"></h1>
-            <p class="sub" id="table-sub" style="font-size:12px"></p>
-          </div>
+          <div><h1 id="table-title" style="font-size:22px;margin:0 0 4px"></h1><p class="sub" id="table-sub" style="font-size:12px"></p></div>
           <button class="btn-secondary" id="table-export">⤓ Export CSV</button>
         </div>
         <div class="card panel">
@@ -345,40 +304,25 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <div style="overflow-x:auto"><table class="data-table" id="data-table"></table></div>
         </div>
       </section>
-
       <section class="view" data-view="cards">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">
-          <div>
-            <h1 id="cards-title" style="font-size:22px;margin:0 0 4px"></h1>
-            <p class="sub" id="cards-sub" style="font-size:12px"></p>
-          </div>
+          <div><h1 id="cards-title" style="font-size:22px;margin:0 0 4px"></h1><p class="sub" id="cards-sub" style="font-size:12px"></p></div>
           <button class="btn-primary" id="cards-new">+ New</button>
         </div>
         <div class="cards-grid" id="cards-grid"></div>
       </section>
-
       <section class="view" data-view="chat">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-          <div>
-            <h1 style="font-size:22px;margin:0 0 4px">AI Assistant</h1>
-            <p class="sub" style="font-size:12px">Ask questions about your workspace data</p>
-          </div>
+          <div><h1 style="font-size:22px;margin:0 0 4px">AI Assistant</h1><p class="sub" style="font-size:12px">Ask questions about your workspace data</p></div>
           <span class="pill pill-amber">Coming soon</span>
         </div>
         <div class="card panel chat-wrap">
           <div class="chat-messages" id="chat-messages">
-            <div class="chat-msg ai">
-              <div class="who">AI</div>
-              <div class="bubble">Hi! I'm your AVVA Assistant. Once connected, I'll be able to answer questions about your workspace — funding, beneficiaries, districts, and impact. Real AI integration is coming.</div>
-            </div>
+            <div class="chat-msg ai"><div class="who">AI</div><div class="bubble">Hi! I'm your AVVA Assistant. Once connected, I'll be able to answer questions about your workspace — funding, beneficiaries, districts, and impact. Real AI integration is coming.</div></div>
           </div>
-          <div class="chat-input">
-            <input placeholder="Ask a question…" id="chat-input" disabled>
-            <button class="btn-primary" disabled>Send</button>
-          </div>
+          <div class="chat-input"><input placeholder="Ask a question…" id="chat-input" disabled><button class="btn-primary" disabled>Send</button></div>
         </div>
       </section>
-
       <section class="view" data-view="post-programme">
         <div class="empty-state">
           <div style="font-size:44px;margin-bottom:12px">▤</div>
@@ -387,94 +331,36 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <button class="btn-primary" id="open-post-programme-2" style="margin:0 auto">+ Open form</button>
         </div>
       </section>
-
       <section class="view" data-view="info">
-        <div style="margin-bottom:14px">
-          <h1 id="info-title" style="font-size:22px;margin:0 0 4px"></h1>
-          <p class="sub" id="info-sub" style="font-size:12px"></p>
-        </div>
-        <div class="card panel" style="padding:22px">
-          <div id="info-body"></div>
-        </div>
+        <div style="margin-bottom:14px"><h1 id="info-title" style="font-size:22px;margin:0 0 4px"></h1><p class="sub" id="info-sub" style="font-size:12px"></p></div>
+        <div class="card panel" style="padding:22px"><div id="info-body"></div></div>
       </section>
-
     </div>
   </main>
 </div>
 
 <div class="backdrop" id="backdrop"></div>
 <aside class="slideout" id="post-panel" aria-hidden="true">
-  <div class="slideout-head">
-    <h2>Post a Programme</h2>
-    <button class="close" id="post-close">✕</button>
-  </div>
+  <div class="slideout-head"><h2>Post a Programme</h2><button class="close" id="post-close">✕</button></div>
   <div class="slideout-body">
     <form id="post-form">
-      <div class="field">
-        <label for="pf-name">Programme name *</label>
-        <input id="pf-name" required placeholder="e.g. Smallholder Irrigation Support">
+      <div class="field"><label for="pf-name">Programme name *</label><input id="pf-name" required placeholder="e.g. Smallholder Irrigation Support"></div>
+      <div class="field-row">
+        <div class="field"><label for="pf-sector">Sector</label><select id="pf-sector"></select></div>
+        <div class="field"><label for="pf-type">Support type</label><select id="pf-type"><option>Training</option><option>Funding</option><option>Equipment</option><option>Market Access</option><option>Mentoring</option></select></div>
       </div>
       <div class="field-row">
-        <div class="field">
-          <label for="pf-sector">Sector</label>
-          <select id="pf-sector"></select>
-        </div>
-        <div class="field">
-          <label for="pf-type">Support type</label>
-          <select id="pf-type">
-            <option>Training</option>
-            <option>Funding</option>
-            <option>Equipment</option>
-            <option>Market Access</option>
-            <option>Mentoring</option>
-          </select>
-        </div>
+        <div class="field"><label for="pf-budget">Budget (R)</label><input id="pf-budget" type="number" min="0" placeholder="e.g. 5000000"></div>
+        <div class="field"><label for="pf-beneficiaries">Target beneficiaries</label><input id="pf-beneficiaries" type="number" min="0" placeholder="e.g. 250"></div>
       </div>
+      <div class="field"><label for="pf-beneficiary-type">Beneficiary type</label><select id="pf-beneficiary-type"><option>NGOs</option><option>Informal businesses</option><option>Farmers</option><option>Youth-owned businesses</option><option>Women-owned businesses</option><option>Mixed</option></select></div>
+      <div class="field"><label>Districts covered</label><div id="pf-districts" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:12px"></div><div class="hint">Leave all unchecked to cover the entire province.</div></div>
       <div class="field-row">
-        <div class="field">
-          <label for="pf-budget">Budget (R)</label>
-          <input id="pf-budget" type="number" min="0" placeholder="e.g. 5000000">
-        </div>
-        <div class="field">
-          <label for="pf-beneficiaries">Target beneficiaries</label>
-          <input id="pf-beneficiaries" type="number" min="0" placeholder="e.g. 250">
-        </div>
+        <div class="field"><label for="pf-start">Start date</label><input id="pf-start" type="date"></div>
+        <div class="field"><label for="pf-end">End date</label><input id="pf-end" type="date"></div>
       </div>
-      <div class="field">
-        <label for="pf-beneficiary-type">Beneficiary type</label>
-        <select id="pf-beneficiary-type">
-          <option>NGOs</option>
-          <option>Informal businesses</option>
-          <option>Farmers</option>
-          <option>Youth-owned businesses</option>
-          <option>Women-owned businesses</option>
-          <option>Mixed</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Districts covered</label>
-        <div id="pf-districts" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;font-size:12px"></div>
-        <div class="hint">Leave all unchecked to cover the entire province.</div>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label for="pf-start">Start date</label>
-          <input id="pf-start" type="date">
-        </div>
-        <div class="field">
-          <label for="pf-end">End date</label>
-          <input id="pf-end" type="date">
-        </div>
-      </div>
-      <div class="field">
-        <label for="pf-desc">Description</label>
-        <textarea id="pf-desc" placeholder="What does the programme deliver? Who is eligible? What outcomes are expected?"></textarea>
-      </div>
-      <div class="field">
-        <label for="pf-ref">Billing reference</label>
-        <input id="pf-ref" placeholder="Auto-generated on submit" readonly>
-        <div class="hint">Each posted programme becomes a billable unit. Reference is auto-assigned.</div>
-      </div>
+      <div class="field"><label for="pf-desc">Description</label><textarea id="pf-desc" placeholder="What does the programme deliver?"></textarea></div>
+      <div class="field"><label for="pf-ref">Billing reference</label><input id="pf-ref" placeholder="Auto-generated on submit" readonly><div class="hint">Each posted programme becomes a billable unit.</div></div>
     </form>
   </div>
   <div class="slideout-foot">
@@ -497,16 +383,14 @@ let session;
 try { session = JSON.parse(sessionRaw); }
 catch (e) { window.location.href = 'login.html'; throw e; }
 
-/* ================= FILTER REGISTRY ================= */
 const registry = (window.AVVA_WORKSPACES || []).filter(w =>
   session.workspaces.includes('*') || session.workspaces.includes(w.id)
 );
 if (!registry.length) {
-  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Your account has no workspace access. Contact your administrator.</div>';
+  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Your account has no workspace access.</div>';
   throw new Error('No workspace access');
 }
 
-/* ================= WORKSPACE SELECTION ================= */
 const params = new URLSearchParams(window.location.search);
 const requestedId = params.get("workspace");
 const activeEntry = registry.find(w => w.id === requestedId)
@@ -523,21 +407,22 @@ function loadScript(src) {
   });
 }
 
+let CONFIG = null;
+
 (async function boot() {
   try { await loadScript(activeEntry.configPath); }
   catch (err) {
     document.body.innerHTML = `<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ${activeEntry.configPath}</div>`;
     return;
   }
-  const C = window.AVVA_CONFIG;
-  if (!C) {
+  CONFIG = window.AVVA_CONFIG;
+  if (!CONFIG) {
     document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined.</div>';
     return;
   }
-  renderAll(C);
+  renderAll(CONFIG);
 })();
 
-/* ================= TOAST ================= */
 const toastEl = $('#toast');
 let toastTimer;
 function toast(msg) {
@@ -545,6 +430,29 @@ function toast(msg) {
   toastEl.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+}
+
+/* ================= PROGRAMMES STORAGE ================= */
+function getPostedProgrammes(workspaceId) {
+  try {
+    const raw = localStorage.getItem('avva_programmes_' + workspaceId);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.error('[AVVA] getPostedProgrammes error:', err);
+    return [];
+  }
+}
+
+function savePostedProgrammes(workspaceId, arr) {
+  try {
+    localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(arr));
+    return true;
+  } catch (err) {
+    console.error('[AVVA] savePostedProgrammes error:', err);
+    return false;
+  }
 }
 
 /* ================= MAIN RENDER ================= */
@@ -589,8 +497,7 @@ function renderAll(C) {
   const menu = $('#workspace-menu');
   menu.innerHTML = registry.map(w => `
     <button data-ws="${w.id}" class="${w.id === C.id ? 'active' : ''}">
-      <strong>${w.label}</strong>
-      <span>${w.description}</span>
+      <strong>${w.label}</strong><span>${w.description}</span>
     </button>
   `).join('');
   menu.querySelectorAll('button').forEach(b => {
@@ -611,6 +518,7 @@ function renderAll(C) {
 /* ================= SIDEBAR ================= */
 function renderSidebar(C) {
   const nav = $('#nav');
+  nav.innerHTML = '';
   let firstBtn = null;
   C.navigation.forEach(group => {
     if (group.section) {
@@ -621,7 +529,6 @@ function renderSidebar(C) {
     }
     group.items.forEach(item => {
       const btn = document.createElement('button');
-      btn.dataset.view = item.view || 'info';
       btn.dataset.id = item.id;
       btn.dataset.label = item.label;
       btn.innerHTML = `<span class="ico">${item.icon}</span>${item.label}` +
@@ -634,7 +541,6 @@ function renderSidebar(C) {
   if (firstBtn) firstBtn.classList.add('active');
 }
 
-/* ================= VIEW ACTIVATION ================= */
 function activateView(C, item, btn) {
   $$('#nav button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -656,7 +562,7 @@ function activateView(C, item, btn) {
     document.querySelector('[data-view="chat"]').classList.add('active');
   } else if (view === 'form') {
     document.querySelector('[data-view="post-programme"]').classList.add('active');
-    if (item.action === 'open-programme-form') openPostPanel(C);
+    if (item.action === 'open-programme-form') openPostPanel();
   } else {
     document.querySelector('[data-view="info"]').classList.add('active');
     renderInfo(C, item);
@@ -865,22 +771,16 @@ function renderCommandCentre(C) {
   $('#bell').addEventListener('click', () => toast('No live notifications in this prototype'));
 }
 
-/* ================= PROGRAMMES ================= */
-function getPostedProgrammes(workspaceId) {
-  try { return JSON.parse(localStorage.getItem('avva_programmes_' + workspaceId) || '[]'); }
-  catch { return []; }
-}
-
+/* ================= PROGRAMMES RENDER (with delete) ================= */
 function renderProgrammes(C) {
   try {
     const baseline = C.programmes.items || [];
     const posted = getPostedProgrammes(C.id);
 
-    console.log('[AVVA] Rendering programmes for', C.id, '— posted:', posted.length, 'baseline:', baseline.length);
-
     const postedHtml = posted.map(p => `
       <div class="prog" style="border-left:3px solid var(--accent-primary);padding-left:8px">
-        <strong>+ ${p.name || 'Untitled programme'}</strong>
+        <button class="prog-delete" data-prog-id="${p.id}" title="Delete">✕</button>
+        <strong>+ ${p.name || 'Untitled'}</strong>
         <span>${p.type || 'Programme'} · ${p.budget ? 'R' + Number(p.budget).toLocaleString('en-ZA') : 'Budget TBC'} · ${p.status || 'Active'}</span>
         <div class="bar-line"><i style="width:100%;background:var(--accent-primary)"></i></div>
       </div>
@@ -895,12 +795,29 @@ function renderProgrammes(C) {
     `).join('');
 
     const el = document.getElementById('programmes');
-    if (!el) { console.warn('[AVVA] #programmes element not found'); return; }
+    if (!el) return;
     el.innerHTML = postedHtml + baselineHtml;
-    console.log('[AVVA] Programmes rendered:', posted.length + baseline.length);
+
+    el.querySelectorAll('.prog-delete').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteProgramme(C.id, btn.dataset.progId);
+      });
+    });
   } catch (err) {
     console.error('[AVVA] renderProgrammes failed:', err);
   }
+}
+
+function deleteProgramme(workspaceId, progId) {
+  const existing = getPostedProgrammes(workspaceId);
+  const target = existing.find(p => p.id === progId);
+  if (!target) return;
+  if (!confirm(`Delete programme "${target.name}"?`)) return;
+  const updated = existing.filter(p => p.id !== progId);
+  savePostedProgrammes(workspaceId, updated);
+  toast('Programme deleted');
+  if (CONFIG) renderProgrammes(CONFIG);
 }
 
 /* ================= POST A PROGRAMME ================= */
@@ -922,32 +839,32 @@ function setupPostProgramme(C) {
   }
   $('#pf-ref').value = newBillingRef();
 
-  function openPanel() {
+  window.__avva_openPostPanel = function() {
     panel.classList.add('open');
     backdrop.classList.add('show');
     panel.setAttribute('aria-hidden', 'false');
-  }
+    $('#pf-ref').value = newBillingRef();
+  };
   function closePanel() {
     panel.classList.remove('open');
     backdrop.classList.remove('show');
     panel.setAttribute('aria-hidden', 'true');
   }
-  window.__avva_openPostPanel = openPanel;
 
-  $('#open-post-programme-1').addEventListener('click', openPanel);
-  $('#open-post-programme-2').addEventListener('click', openPanel);
-  $('#post-close').addEventListener('click', closePanel);
-  $('#post-cancel').addEventListener('click', closePanel);
-  backdrop.addEventListener('click', closePanel);
+  $('#open-post-programme-1').onclick = window.__avva_openPostPanel;
+  $('#open-post-programme-2').onclick = window.__avva_openPostPanel;
+  $('#post-close').onclick = closePanel;
+  $('#post-cancel').onclick = closePanel;
+  backdrop.onclick = closePanel;
 
-  $('#post-submit').addEventListener('click', () => {
+  $('#post-submit').onclick = function() {
     const name = $('#pf-name').value.trim();
     if (!name) { toast('Programme name is required'); return; }
 
     const selectedDistricts = $$('#pf-districts input:checked').map(cb => cb.value);
     const newProg = {
       id: 'prog-' + Date.now(),
-      name,
+      name: name,
       sector: $('#pf-sector').value,
       type: $('#pf-type').value,
       budget: $('#pf-budget').value,
@@ -963,22 +880,16 @@ function setupPostProgramme(C) {
       postedAt: new Date().toISOString()
     };
 
-    try {
-      const existing = getPostedProgrammes(C.id);
-      existing.unshift(newProg);
-      localStorage.setItem('avva_programmes_' + C.id, JSON.stringify(existing));
-      console.log('[AVVA] Programme saved:', newProg.billingRef, newProg.name);
-    } catch (err) {
-      console.error('[AVVA] Failed to save programme:', err);
-      toast('Storage error — could not save');
-      return;
-    }
+    const existing = getPostedProgrammes(C.id);
+    existing.unshift(newProg);
+    const saved = savePostedProgrammes(C.id, existing);
+    if (!saved) { toast('Storage error — could not save'); return; }
 
-    toast(`✓ Programme "${name}" published · Ref ${newProg.billingRef}`);
+    toast(`✓ Programme "${name}" published`);
     closePanel();
     resetForm();
     renderProgrammes(C);
-  });
+  };
 
   function resetForm() {
     $('#pf-name').value = '';
@@ -988,11 +899,10 @@ function setupPostProgramme(C) {
     $('#pf-end').value = '';
     $('#pf-desc').value = '';
     $$('#pf-districts input').forEach(cb => cb.checked = false);
-    $('#pf-ref').value = newBillingRef();
   }
 }
 
-function openPostPanel(C) {
+function openPostPanel() {
   if (window.__avva_openPostPanel) window.__avva_openPostPanel();
 }
 
@@ -1007,7 +917,7 @@ function renderTable(C, item) {
     const data = source === 'provinces' && C.provinces ? C.provinces : C.districts;
 
     if (!data || !Object.keys(data).length) {
-      $('#data-table').innerHTML = '<tbody><tr><td style="text-align:center;padding:40px;color:#94a3b8">No data available for this view.</td></tr></tbody>';
+      $('#data-table').innerHTML = '<tbody><tr><td style="text-align:center;padding:40px;color:#94a3b8">No data available.</td></tr></tbody>';
       $('#table-count').textContent = '0 rows';
       return;
     }
@@ -1017,9 +927,7 @@ function renderTable(C, item) {
       columns = cfg.columns.slice();
     } else {
       const keySet = new Set(['name']);
-      Object.values(data).forEach(d => {
-        Object.keys(d).forEach(k => { if (k !== 'bounds') keySet.add(k); });
-      });
+      Object.values(data).forEach(d => Object.keys(d).forEach(k => { if (k !== 'bounds') keySet.add(k); }));
       columns = Array.from(keySet);
     }
     columns = columns.filter(c => c !== 'name');
@@ -1036,8 +944,6 @@ function renderTable(C, item) {
       return row;
     });
 
-    console.log('[AVVA] Table view:', item.label, '— columns:', columns, '— rows:', rows.length);
-
     let sortKey = columns.find(c => c !== 'name') || 'name';
     let sortDir = -1;
 
@@ -1049,9 +955,7 @@ function renderTable(C, item) {
           if (v >= 1_000_000_000) return 'R' + (v / 1_000_000_000).toFixed(1) + 'bn';
           return 'R' + (v / 1_000_000).toFixed(1) + 'm';
         }
-        if (k.includes('commercial') || k.includes('penetration') || k.includes('growth') || k.includes('coverage') || k.includes('completion')) {
-          return v + '%';
-        }
+        if (k.includes('commercial') || k.includes('penetration') || k.includes('growth') || k.includes('coverage') || k.includes('completion')) return v + '%';
         return v.toLocaleString('en-ZA');
       }
       return String(v);
@@ -1060,27 +964,22 @@ function renderTable(C, item) {
     function draw() {
       const q = ($('#table-search').value || '').trim().toLowerCase();
       const statusFilter = $('#table-status-filter').value;
-
       let filtered = rows.filter(r => {
         if (q && !JSON.stringify(r).toLowerCase().includes(q)) return false;
         if (statusFilter && r._status !== statusFilter) return false;
         return true;
       });
-
       filtered.sort((a, b) => {
         const av = a[sortKey], bv = b[sortKey];
         if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * sortDir;
         return String(av == null ? '' : av).localeCompare(String(bv == null ? '' : bv)) * sortDir;
       });
-
       $('#table-count').textContent = `${filtered.length} of ${rows.length} rows`;
-
       const header = columns.map(c => {
         const label = c.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
         const arrow = c === sortKey ? (sortDir === -1 ? ' ▾' : ' ▴') : '';
         return `<th data-key="${c}">${label}${arrow}</th>`;
       }).join('') + '<th>Status</th>';
-
       const body = filtered.length
         ? filtered.map(r => {
             const cells = columns.map(c => {
@@ -1089,20 +988,15 @@ function renderTable(C, item) {
               const cls = typeof v === 'number' ? 'num' : '';
               return `<td class="${cls}">${fmtVal(c, v)}</td>`;
             }).join('');
-            const statusPill = r._status === 'Needs Review'
-              ? '<span class="pill pill-red">Needs Review</span>'
-              : '<span class="pill pill-green">Compliant</span>';
+            const statusPill = r._status === 'Needs Review' ? '<span class="pill pill-red">Needs Review</span>' : '<span class="pill pill-green">Compliant</span>';
             return `<tr>${cells}<td>${statusPill}</td></tr>`;
           }).join('')
         : '<tr><td colspan="99" style="text-align:center;padding:40px;color:#94a3b8">No matching rows</td></tr>';
-
       $('#data-table').innerHTML = `<thead><tr>${header}</tr></thead><tbody>${body}</tbody>`;
-
       document.querySelectorAll('#data-table th').forEach(th => {
         th.addEventListener('click', () => {
           const k = th.dataset.key;
-          if (k === sortKey) sortDir *= -1;
-          else { sortKey = k; sortDir = 1; }
+          if (k === sortKey) sortDir *= -1; else { sortKey = k; sortDir = 1; }
           draw();
         });
       });
@@ -1117,9 +1011,7 @@ function renderTable(C, item) {
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = `${C.id}-${item.id}.csv`;
-      a.click();
+      a.href = url; a.download = `${C.id}-${item.id}.csv`; a.click();
       toast('CSV exported');
     };
 
@@ -1143,11 +1035,13 @@ function renderCards(C, item) {
     const posted = getPostedProgrammes(C.id);
     cards = [
       ...posted.map(p => ({
+        id: p.id, isPosted: true,
         title: p.name,
         description: p.description || `${p.type} · ${p.beneficiaryType || 'Mixed'} beneficiaries`,
         meta: [p.billingRef, 'Posted ' + new Date(p.postedAt).toLocaleDateString('en-ZA')]
       })),
       ...baseline.map(([name, count, pct]) => ({
+        isPosted: false,
         title: name,
         description: `${count} beneficiaries · ${pct}% progress`,
         meta: ['Sample programme', `${pct}% complete`]
@@ -1180,20 +1074,25 @@ function renderCards(C, item) {
   }
 
   $('#cards-grid').innerHTML = cards.map(c => `
-    <div class="card-item">
+    <div class="card-item" ${c.isPosted ? `data-prog-id="${c.id}"` : ''}>
+      ${c.isPosted ? `<button class="card-delete" data-prog-id="${c.id}" title="Delete">✕</button>` : ''}
       <h4>${c.title}</h4>
       <p>${c.description}</p>
       <div class="meta"><span>${c.meta[0]}</span><span>${c.meta[1]}</span></div>
     </div>
   `).join('');
 
-  const newBtn = $('#cards-new');
-  newBtn.onclick = () => {
-    if (cardsCfg.type === 'programmes') {
-      openPostPanel(C);
-    } else {
-      toast('New item form coming soon');
-    }
+  document.querySelectorAll('.card-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteProgramme(C.id, btn.dataset.progId);
+      setTimeout(() => renderCards(C, item), 100);
+    });
+  });
+
+  $('#cards-new').onclick = () => {
+    if (cardsCfg.type === 'programmes') openPostPanel();
+    else toast('New item form coming soon');
   };
 }
 
@@ -1201,22 +1100,14 @@ function renderCards(C, item) {
 function renderInfo(C, item) {
   $('#info-title').textContent = item.label;
   $('#info-sub').textContent = item.subtitle || `${item.label} for ${C.workspaceName}`;
-
   const bodies = {
-    settings: `<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3>
-      <p style="font-size:12px;color:#70809b;line-height:1.6">Configure this workspace's branding, terminology, data sources, and access permissions. On the AWS platform, this becomes a full settings interface with role-based controls.</p>`,
-    users: `<h3 style="margin:0 0 8px;font-size:14px">User Management</h3>
-      <p style="font-size:12px;color:#70809b;line-height:1.6">Manage who has access to this workspace. Assign roles (Admin, Programme Manager, Viewer), and control which sections each role can see.</p>`,
-    sources: `<h3 style="margin:0 0 8px;font-size:14px">Data Sources</h3>
-      <p style="font-size:12px;color:#70809b;line-height:1.6">Connected systems feeding this workspace: manual entry, CSV import, VulaScan feed (aggregated), and external APIs. On AWS, this becomes the integration hub.</p>`,
-    audit: `<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3>
-      <p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace — logins, data changes, programme posts, exports. Essential for compliance and accountability.</p>`,
-    logs: `<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3>
-      <p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace — logins, data changes, programme posts, exports. Essential for compliance and accountability.</p>`
+    settings: `<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Configure branding, terminology, data sources, and permissions. On AWS this becomes a full settings interface.</p>`,
+    users: `<h3 style="margin:0 0 8px;font-size:14px">User Management</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Manage who has access to this workspace. Assign roles (Admin, Programme Manager, Viewer).</p>`,
+    sources: `<h3 style="margin:0 0 8px;font-size:14px">Data Sources</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Connected systems: manual entry, CSV import, VulaScan feed, external APIs.</p>`,
+    audit: `<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace.</p>`,
+    logs: `<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace.</p>`
   };
-
-  $('#info-body').innerHTML = bodies[item.id] || `<h3 style="margin:0 0 8px;font-size:14px">${item.label}</h3>
-    <p style="font-size:12px;color:#70809b;line-height:1.6">This section is part of the AVVA Insights platform. Full functionality will be enabled once the workspace is connected to live data sources.</p>`;
+  $('#info-body').innerHTML = bodies[item.id] || `<h3 style="margin:0 0 8px;font-size:14px">${item.label}</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Part of the AVVA Insights platform. Full functionality enabled once connected to live data sources.</p>`;
 }
 
 /* ================= BOTTOM-LEFT ================= */
@@ -1226,7 +1117,6 @@ function renderBottomLeft(C) {
   $('#bottom-left-title').textContent = bl.title;
   $('#bottom-left-sub').textContent = bl.subtitle;
   const body = $('#bottom-left-body');
-
   if (bl.type === 'sdg') {
     body.innerHTML = `<div class="sdg">${bl.tiles.map(([n,l,c]) => `<div style="background:${c}">${n}<br>${l}</div>`).join('')}</div>
       <div class="sdg-pcts">${bl.percentages.map(p => `<span>${p}</span>`).join('')}</div>`;
