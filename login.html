@@ -16,7 +16,6 @@ label{display:block;font-size:11px;color:#cbd5e1;letter-spacing:.05em;margin:14p
 input{width:100%;padding:12px 14px;border-radius:9px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px}
 input:focus{outline:none;border-color:#7c3aed;background:rgba(124,58,237,0.08)}
 button{width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#4f25d8);color:#fff;font-weight:600;font-size:14px;letter-spacing:.03em;cursor:pointer}
-button:hover{transform:translateY(-1px)}
 .error{margin-top:14px;padding:10px 12px;border-radius:8px;font-size:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;display:none}
 .error.show{display:block}
 .hint{margin-top:24px;padding:12px;border-radius:9px;background:rgba(124,58,237,0.08);border:1px dashed rgba(124,58,237,0.3);font-size:11px;color:#c4b5fd;line-height:1.6}
@@ -51,15 +50,14 @@ button:hover{transform:translateY(-1px)}
 </div>
 
 <script>
-// Credentials embedded directly — no external file needed
 const ACCOUNTS = [
-  { email: "admin@avva.demo",    password: "admin123",    name: "AVVA Administrator",        role: "Platform Admin",   workspaces: ["*"] },
-  { email: "reemerge@avva.demo", password: "reemerge123", name: "Reemerge Staff",            role: "Portfolio Manager", workspaces: ["*"] },
-  { email: "kzn@avva.demo",      password: "kzn123",      name: "KZN Agriculture Officer",   role: "Programme Officer", workspaces: ["kzn-doa"] },
-  { email: "health@avva.demo",   password: "health123",   name: "Health Fund Manager",       role: "Impact Manager",    workspaces: ["healthcare-fund"] },
-  { email: "mfg@avva.demo",      password: "mfg123",      name: "Manufacturing Lead",        role: "Programme Lead",    workspaces: ["manufacturing-fund"] },
-  { email: "social@avva.demo",   password: "social123",   name: "Social Development Lead",   role: "Programme Lead",    workspaces: ["social-development"] },
-  { email: "hennessy@avva.demo", password: "brand123",    name: "Hennessy Brand Manager",    role: "Brand Manager",     workspaces: ["hennessy"] }
+  { email: "admin@avva.demo",    password: "admin123",    name: "AVVA Administrator",      role: "Platform Admin",    workspaces: ["*"] },
+  { email: "reemerge@avva.demo", password: "reemerge123", name: "Reemerge Staff",          role: "Portfolio Manager", workspaces: ["*"] },
+  { email: "kzn@avva.demo",      password: "kzn123",      name: "KZN Agriculture Officer", role: "Programme Officer", workspaces: ["kzn-doa"] },
+  { email: "health@avva.demo",   password: "health123",   name: "Health Fund Manager",     role: "Impact Manager",    workspaces: ["healthcare-fund"] },
+  { email: "mfg@avva.demo",      password: "mfg123",      name: "Manufacturing Lead",      role: "Programme Lead",    workspaces: ["manufacturing-fund"] },
+  { email: "social@avva.demo",   password: "social123",   name: "Social Development Lead", role: "Programme Lead",    workspaces: ["social-development"] },
+  { email: "hennessy@avva.demo", password: "brand123",    name: "Hennessy Brand Manager",  role: "Brand Manager",     workspaces: ["hennessy"] }
 ];
 
 document.getElementById('login-form').addEventListener('submit', e => {
@@ -75,19 +73,14 @@ document.getElementById('login-form').addEventListener('submit', e => {
     return;
   }
 
-  try {
-    localStorage.setItem('avva_session', JSON.stringify({
-      email: account.email,
-      name: account.name,
-      role: account.role,
-      workspaces: account.workspaces,
-      signedInAt: Date.now()
-    }));
-    window.location.href = 'dashboard.html';
-  } catch (err) {
-    errEl.textContent = 'Session error: ' + err.message;
-    errEl.classList.add('show');
-  }
+  localStorage.setItem('avva_session', JSON.stringify({
+    email: account.email,
+    name: account.name,
+    role: account.role,
+    workspaces: account.workspaces,
+    signedInAt: Date.now()
+  }));
+  window.location.href = 'dashboard.html';
 });
 </script>
 </body>
