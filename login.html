@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AVVA Insights · Login</title>
+<style>
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;font-size:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 55%,#4c1d95 100%);
+  color:#e2e8f0;
+  display:flex;align-items:center;justify-content:center;
+  padding:24px;
+}
+.card{
+  width:min(440px,100%);
+  background:rgba(255,255,255,0.04);
+  backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:18px;
+  padding:40px;
+  box-shadow:0 30px 60px rgba(0,0,0,0.4);
+}
+.brand{font-size:26px;letter-spacing:.22em;font-weight:300;margin-bottom:6px}
+.brand small{display:block;font-size:9px;letter-spacing:.5em;font-weight:700;margin-top:6px;color:#a78bfa}
+h1{font-size:16px;font-weight:600;margin:26px 0 6px}
+.sub{font-size:12px;color:#94a3b8;margin-bottom:22px}
+label{display:block;font-size:11px;color:#cbd5e1;letter-spacing:.05em;margin:14px 0 6px;font-weight:600;text-transform:uppercase}
+input{
+  width:100%;padding:12px 14px;border-radius:9px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);
+  color:#fff;font-size:14px;
+}
+input:focus{outline:none;border-color:#7c3aed;background:rgba(124,58,237,0.08)}
+button{
+  width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;
+  background:linear-gradient(135deg,#7c3aed,#4f25d8);color:#fff;
+  font-weight:600;font-size:14px;letter-spacing:.03em;cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+  box-shadow:0 8px 24px rgba(124,58,237,0.4);
+}
+button:hover{transform:translateY(-1px)}
+.error{
+  margin-top:14px;padding:10px 12px;border-radius:8px;font-size:12px;
+  background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;
+  display:none;
+}
+.error.show{display:block}
+.hint{margin-top:24px;padding:12px;border-radius:9px;background:rgba(124,58,237,0.08);border:1px dashed rgba(124,58,237,0.3);font-size:11px;color:#c4b5fd;line-height:1.6}
+.hint b{color:#a78bfa}
+.back{display:inline-block;margin-top:18px;font-size:11px;color:#94a3b8;text-decoration:none}
+.back:hover{color:#c4b5fd}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">AVVA<small>INSIGHTS</small></div>
+  <h1>Sign in to your workspace</h1>
+  <p class="sub">Use the credentials provided by your institution.</p>
+  <form id="login-form">
+    <label for="email">Email</label>
+    <input type="email" id="email" autocomplete="username" placeholder="your.name@institution.co.za" required>
+    <label for="password">Password</label>
+    <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" required>
+    <button type="submit">Sign in →</button>
+    <div class="error" id="error">Invalid credentials. Please try again.</div>
+  </form>
+  <div class="hint">
+    <b>Demo credentials</b><br>
+    admin@avva.demo / admin123<br>
+    kzn@avva.demo / kzn123<br>
+    health@avva.demo / health123<br>
+    mfg@avva.demo / mfg123<br>
+    social@avva.demo / social123<br>
+    hennessy@avva.demo / brand123<br>
+    reemerge@avva.demo / reemerge123
+  </div>
+  <a href="index.html" class="back">← Back to home</a>
+</div>
+
+<script src="configs/accounts.js"></script>
+<script>
+document.getElementById('login-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim().toLowerCase();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('error');
+
+  const account = (window.AVVA_ACCOUNTS || []).find(
+    a => a.email.toLowerCase() === email && a.password === password
+  );
+
+  if (!account) {
+    errEl.classList.add('show');
+    return;
+  }
+
+  // Save session (demo only — not secure, replaced by real auth on AWS)
+  localStorage.setItem('avva_session', JSON.stringify({
+    email: account.email,
+    name: account.name,
+    role: account.role,
+    workspaces: account.workspaces,
+    signedInAt: Date.now()
+  }));
+
+  window.location.href = 'dashboard.html';
+});
+</script>
+</body>
+</html>
