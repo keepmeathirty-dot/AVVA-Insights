@@ -70,7 +70,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .geo-toggle button{border:0;background:transparent;padding:5px 9px;border-radius:6px;color:#394760;font-size:11px;cursor:pointer}
 .geo-toggle button.active{background:var(--accent-light);color:var(--accent-primary)}
 .map-wrap{position:relative;flex:1;min-height:0;overflow:hidden;margin-top:8px}
-#map{position:absolute;inset:0;border-radius:8px;background:#f0f4ff}
+#map,#map-full{position:absolute;inset:0;border-radius:8px;background:#f0f4ff}
 .leaflet-tile{filter:grayscale(15%) brightness(1.03) contrast(0.95)}
 .map-legend{position:absolute;bottom:14px;left:13px;background:#fffffff0;padding:10px;border:1px solid #e6eaf2;border-radius:8px;font-size:10px;z-index:1000}
 .gradient{width:98px;height:6px;display:inline-block;margin:0 5px 2px;border-radius:3px}
@@ -285,12 +285,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <span id="foot-status"></span>
           <span id="foot-copy"></span>
         </footer>
-            <section class="view" data-view="map-full">
+      </section>
+
+      <section class="view" data-view="map-full">
         <div style="margin-bottom:14px">
           <h1 id="mapfull-title" style="font-size:22px;margin:0 0 4px"></h1>
           <p class="sub" id="mapfull-sub" style="font-size:12px"></p>
         </div>
-        <div class="card panel map-panel" style="height:calc(100vh - 200px)">
+        <div class="card panel map-panel" style="height:calc(100vh - 220px)">
           <div class="map-header">
             <div>
               <h2 id="mapfull-map-title"></h2>
@@ -314,6 +316,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           </div>
         </div>
       </section>
+
       <section class="view" data-view="table">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">
           <div><h1 id="table-title" style="font-size:22px;margin:0 0 4px"></h1><p class="sub" id="table-sub" style="font-size:12px"></p></div>
@@ -332,6 +335,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <div style="overflow-x:auto"><table class="data-table" id="data-table"></table></div>
         </div>
       </section>
+
       <section class="view" data-view="cards">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">
           <div><h1 id="cards-title" style="font-size:22px;margin:0 0 4px"></h1><p class="sub" id="cards-sub" style="font-size:12px"></p></div>
@@ -339,6 +343,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         </div>
         <div class="cards-grid" id="cards-grid"></div>
       </section>
+
       <section class="view" data-view="chat">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
           <div><h1 style="font-size:22px;margin:0 0 4px">AI Assistant</h1><p class="sub" style="font-size:12px">Ask questions about your workspace data</p></div>
@@ -351,6 +356,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <div class="chat-input"><input placeholder="Ask a question…" id="chat-input" disabled><button class="btn-primary" disabled>Send</button></div>
         </div>
       </section>
+
       <section class="view" data-view="post-programme">
         <div class="empty-state">
           <div style="font-size:44px;margin-bottom:12px">▤</div>
@@ -359,6 +365,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
           <button class="btn-primary" id="open-post-programme-2" style="margin:0 auto">+ Open form</button>
         </div>
       </section>
+
       <section class="view" data-view="info">
         <div style="margin-bottom:14px"><h1 id="info-title" style="font-size:22px;margin:0 0 4px"></h1><p class="sub" id="info-sub" style="font-size:12px"></p></div>
         <div class="card panel" style="padding:22px"><div id="info-body"></div></div>
@@ -579,9 +586,9 @@ function activateView(C, item, btn) {
   $$('.view').forEach(v => v.classList.remove('active'));
 
   if (view === 'map') {
-    // Command Centre = the full dashboard. Other map items = full-width map only.
     if (item.id === 'command') {
       document.querySelector('[data-view="command"]').classList.add('active');
+      setTimeout(() => { if (window.__avva_mainMap) window.__avva_mainMap.invalidateSize(); }, 100);
     } else {
       document.querySelector('[data-view="map-full"]').classList.add('active');
       renderFullMap(C, item);
@@ -600,127 +607,6 @@ function activateView(C, item, btn) {
   } else {
     document.querySelector('[data-view="info"]').classList.add('active');
     renderInfo(C, item);
-  }
-}
-
-/* ================= FULL-WIDTH MAP VIEW ================= */
-let fullMapInstance = null;
-let fullMapLayer = null;
-let fullMapData = null;
-
-function renderFullMap(C, item) {
-  $('#mapfull-title').textContent = item.label;
-  $('#mapfull-sub').textContent = item.subtitle || `${item.label} — ${C.workspaceName}`;
-  $('#mapfull-map-title').textContent = C.map.title;
-  $('#mapfull-map-sub').textContent = C.map.subtitle;
-
-  // Periods
-  const periodsEl = $('#mapfull-periods');
-  periodsEl.innerHTML = '';
-  C.periods.forEach(p => {
-    const btn = document.createElement('button');
-    btn.textContent = p;
-    if (p === C.defaultPeriod) btn.classList.add('active');
-    periodsEl.appendChild(btn);
-  });
-  $('#mapfull-date-label').textContent = `Reporting period · ${C.defaultPeriod}　▣`;
-
-  // Layers
-  const layersEl = $('#mapfull-layer-controls');
-  layersEl.innerHTML = '';
-  C.layers.forEach(l => {
-    const label = document.createElement('label');
-    label.innerHTML = `<input type="checkbox" data-layer="${l.id}" ${l.default ? 'checked' : ''}>${l.label}`;
-    layersEl.appendChild(label);
-  });
-
-  // Legend
-  $('#mapfull-legend-gradient').style.background = `linear-gradient(90deg, ${C.colourScale.join(', ')})`;
-
-  // Init map (once)
-  if (!fullMapInstance) {
-    fullMapInstance = L.map('map-full', {
-      center: C.map.center,
-      zoom: C.map.zoom,
-      zoomControl: false,
-      scrollWheelZoom: true
-    });
-    L.control.zoom({ position: 'topright' }).addTo(fullMapInstance);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-      maxZoom: 18
-    }).addTo(fullMapInstance);
-  } else {
-    fullMapInstance.setView(C.map.center, C.map.zoom);
-  }
-
-  // Force Leaflet to recalculate size (needed after view toggle)
-  setTimeout(() => fullMapInstance.invalidateSize(), 100);
-
-  // Colour helpers
-  function hexToRgb(hex) { const h = hex.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
-  function lerp(a,b,t){return Math.round(a+(b-a)*t);}
-  const scaleRgb = C.colourScale.map(hexToRgb);
-  function getColour(v,min,max){
-    const t=Math.max(0,Math.min(1,(v-min)/(max-min||1)));
-    const segs=scaleRgb.length-1; const seg=Math.min(Math.floor(t*segs),segs-1); const local=t*segs-seg;
-    const [r1,g1,b1]=scaleRgb[seg]; const [r2,g2,b2]=scaleRgb[seg+1];
-    return `rgb(${lerp(r1,r2,local)},${lerp(g1,g2,local)},${lerp(b1,b2,local)})`;
-  }
-
-  function drawLayer(dataObj, metricKey) {
-    const nms = Object.keys(dataObj);
-    const values = nms.map(n => dataObj[n][metricKey] || 0);
-    const min = Math.min(...values); const max = Math.max(...values);
-    const features = nms.map(name => {
-      const d = dataObj[name];
-      const [[south,west],[north,east]] = d.bounds;
-      return {
-        type: "Feature",
-        properties: { name, ...d },
-        geometry: { type: "Polygon", coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]] }
-      };
-    });
-
-    if (fullMapLayer) fullMapInstance.removeLayer(fullMapLayer);
-    fullMapLayer = L.geoJSON({ type: "FeatureCollection", features }, {
-      style: f => ({
-        fillColor: getColour(f.properties[metricKey] || 0, min, max),
-        weight: 1.5, opacity: .9, color: '#fff', fillOpacity: .78
-      }),
-      onEachFeature: (f, layer) => {
-        const p = f.properties;
-        const val = p[metricKey] || 0;
-        const display = (metricKey === 'revenue' || metricKey === 'funding') ? 'R' + (val/1_000_000).toFixed(1) + 'm' : val.toLocaleString('en-ZA');
-        layer.bindTooltip(`<strong>${p.name}</strong><br>${display} ${C.primaryMetricLabel.toLowerCase()}`, { sticky: true });
-        layer.on({
-          mouseover: e => e.target.setStyle({ weight: 3, color: C.accent.primary, fillOpacity: .9 }),
-          mouseout: e => fullMapLayer.resetStyle(e.target)
-        });
-      }
-    }).addTo(fullMapInstance);
-    fullMapData = dataObj;
-  }
-
-  drawLayer(C.districts, C.primaryMetric);
-
-  // Geo toggle
-  const gt = $('#mapfull-geo-toggle');
-  if (C.geoScope === 'both' && C.provinces) {
-    gt.style.display = 'flex';
-    gt.querySelectorAll('button').forEach(b => {
-      b.onclick = () => {
-        gt.querySelectorAll('button').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        if (b.dataset.geo === 'provinces') {
-          drawLayer(C.provinces, C.primaryMetric);
-          fullMapInstance.setView([-29.0, 24.0], 5);
-        } else {
-          drawLayer(C.districts, C.primaryMetric);
-          fullMapInstance.setView(C.map.center, C.map.zoom);
-        }
-      };
-    });
   }
 }
 
@@ -828,6 +714,7 @@ function renderCommandCentre(C) {
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
   }).addTo(map);
+  window.__avva_mainMap = map;
 
   function hexToRgb(hex) { const h = hex.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
   function lerp(a,b,t){return Math.round(a+(b-a)*t);}
@@ -924,6 +811,118 @@ function renderCommandCentre(C) {
     cb.addEventListener('change', () => toast(`${cb.parentElement.textContent.trim()} ${cb.checked ? 'shown' : 'hidden'}`));
   });
   $('#bell').addEventListener('click', () => toast('No live notifications in this prototype'));
+}
+
+/* ================= FULL-WIDTH MAP VIEW ================= */
+let fullMapInstance = null;
+let fullMapLayer = null;
+
+function renderFullMap(C, item) {
+  $('#mapfull-title').textContent = item.label;
+  $('#mapfull-sub').textContent = item.subtitle || `${item.label} — ${C.workspaceName}`;
+  $('#mapfull-map-title').textContent = C.map.title;
+  $('#mapfull-map-sub').textContent = C.map.subtitle;
+
+  const periodsEl = $('#mapfull-periods');
+  periodsEl.innerHTML = '';
+  C.periods.forEach(p => {
+    const btn = document.createElement('button');
+    btn.textContent = p;
+    if (p === C.defaultPeriod) btn.classList.add('active');
+    periodsEl.appendChild(btn);
+  });
+  $('#mapfull-date-label').textContent = `Reporting period · ${C.defaultPeriod}　▣`;
+
+  const layersEl = $('#mapfull-layer-controls');
+  layersEl.innerHTML = '';
+  C.layers.forEach(l => {
+    const label = document.createElement('label');
+    label.innerHTML = `<input type="checkbox" data-layer="${l.id}" ${l.default ? 'checked' : ''}>${l.label}`;
+    layersEl.appendChild(label);
+  });
+
+  $('#mapfull-legend-gradient').style.background = `linear-gradient(90deg, ${C.colourScale.join(', ')})`;
+
+  if (!fullMapInstance) {
+    fullMapInstance = L.map('map-full', {
+      center: C.map.center,
+      zoom: C.map.zoom,
+      zoomControl: false,
+      scrollWheelZoom: true
+    });
+    L.control.zoom({ position: 'topright' }).addTo(fullMapInstance);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+      maxZoom: 18
+    }).addTo(fullMapInstance);
+  } else {
+    fullMapInstance.setView(C.map.center, C.map.zoom);
+  }
+
+  setTimeout(() => fullMapInstance.invalidateSize(), 120);
+
+  function hexToRgb(hex) { const h = hex.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; }
+  function lerp(a,b,t){return Math.round(a+(b-a)*t);}
+  const scaleRgb = C.colourScale.map(hexToRgb);
+  function getColour(v,min,max){
+    const t=Math.max(0,Math.min(1,(v-min)/(max-min||1)));
+    const segs=scaleRgb.length-1; const seg=Math.min(Math.floor(t*segs),segs-1); const local=t*segs-seg;
+    const [r1,g1,b1]=scaleRgb[seg]; const [r2,g2,b2]=scaleRgb[seg+1];
+    return `rgb(${lerp(r1,r2,local)},${lerp(g1,g2,local)},${lerp(b1,b2,local)})`;
+  }
+
+  function drawLayer(dataObj, metricKey) {
+    const nms = Object.keys(dataObj);
+    const values = nms.map(n => dataObj[n][metricKey] || 0);
+    const min = Math.min(...values); const max = Math.max(...values);
+    const features = nms.map(name => {
+      const d = dataObj[name];
+      const [[south,west],[north,east]] = d.bounds;
+      return {
+        type: "Feature",
+        properties: { name, ...d },
+        geometry: { type: "Polygon", coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]] }
+      };
+    });
+
+    if (fullMapLayer) fullMapInstance.removeLayer(fullMapLayer);
+    fullMapLayer = L.geoJSON({ type: "FeatureCollection", features }, {
+      style: f => ({
+        fillColor: getColour(f.properties[metricKey] || 0, min, max),
+        weight: 1.5, opacity: .9, color: '#fff', fillOpacity: .78
+      }),
+      onEachFeature: (f, layer) => {
+        const p = f.properties;
+        const val = p[metricKey] || 0;
+        const display = (metricKey === 'revenue' || metricKey === 'funding') ? 'R' + (val/1_000_000).toFixed(1) + 'm' : val.toLocaleString('en-ZA');
+        layer.bindTooltip(`<strong>${p.name}</strong><br>${display} ${C.primaryMetricLabel.toLowerCase()}`, { sticky: true });
+        layer.on({
+          mouseover: e => e.target.setStyle({ weight: 3, color: C.accent.primary, fillOpacity: .9 }),
+          mouseout: e => fullMapLayer.resetStyle(e.target)
+        });
+      }
+    }).addTo(fullMapInstance);
+  }
+
+  drawLayer(C.districts, C.primaryMetric);
+
+  const gt = $('#mapfull-geo-toggle');
+  if (C.geoScope === 'both' && C.provinces) {
+    gt.style.display = 'flex';
+    gt.querySelectorAll('button').forEach(b => {
+      b.onclick = () => {
+        gt.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        if (b.dataset.geo === 'provinces') {
+          drawLayer(C.provinces, C.primaryMetric);
+          fullMapInstance.setView([-29.0, 24.0], 5);
+        } else {
+          drawLayer(C.districts, C.primaryMetric);
+          fullMapInstance.setView(C.map.center, C.map.zoom);
+        }
+      };
+    });
+  }
 }
 
 /* ================= PROGRAMMES RENDER (with delete) ================= */
