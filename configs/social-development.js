@@ -104,18 +104,33 @@ window.AVVA_CONFIG = {
     ]
   },
 
-  navigation: [
+   navigation: [
     { section: "", items: [
-      { id: "command", label: "Command Centre", icon: "⌂" },
-      { id: "ngos", label: "NGO Observatory", icon: "◎" },
-      { id: "funding", label: "Funding Streams", icon: "▤" },
-      { id: "beneficiaries", label: "Beneficiary Insights", icon: "♧" },
-      { id: "geo", label: "District Analysis", icon: "◇" },
-      { id: "training", label: "Training Tracker", icon: "▣" },
-      { id: "impact", label: "Impact Monitoring", icon: "⌁" },
-      { id: "reports", label: "Reports", icon: "▤" },
-      { id: "ai", label: "AI Assistant", icon: "✧" }
+      { id: "command", label: "Command Centre", icon: "⌂", view: "map" },
+      { id: "ngos", label: "NGO Observatory", icon: "◎", view: "map" },
+      { id: "post-programme", label: "Post a Programme", icon: "＋", view: "form", action: "open-programme-form" },
+      { id: "programmes", label: "Funding Streams", icon: "▤", view: "cards", cards: { type: "programmes" } },
+      { id: "funding", label: "Funding Tracker", icon: "▣", view: "table", table: { source: "districts", columns: ["name","ngos","funding","beneficiaries","training","completion"] } },
+      { id: "geo", label: "District Analysis", icon: "◇", view: "table", table: { source: "districts", columns: ["name","ngos","funding","beneficiaries","training"] } },
+      { id: "beneficiaries", label: "Beneficiary Insights", icon: "♧", view: "table", table: { source: "districts", columns: ["name","beneficiaries","training","completion"] } },
+      { id: "impact", label: "Impact Monitoring", icon: "⌁", view: "table", table: { source: "districts", columns: ["name","beneficiaries","completion"] } },
+      { id: "reports", label: "Reports", icon: "▤", view: "cards", cards: { type: "reports" } },
+      { id: "ai", label: "AI Assistant", icon: "✧", view: "chat" }
     ]},
+    { section: "TOOLS", items: [
+      { id: "explorer", label: "Data Explorer", icon: "▦", view: "table", table: { source: "districts", columns: ["name","ngos","funding","beneficiaries","training","completion"] } },
+      { id: "compare", label: "Compare Districts", icon: "≋", view: "table", table: { source: "districts", columns: ["name","ngos","beneficiaries"] } },
+      { id: "alerts", label: "Alerts", icon: "♧", view: "cards", cards: { type: "alerts" }, badge: "4" },
+      { id: "audit", label: "Audit Feed", icon: "▢", view: "info" }
+    ]},
+    { section: "ADMIN", items: [
+      { id: "settings", label: "Workspace Settings", icon: "⚙", view: "info" },
+      { id: "users", label: "User Management", icon: "♧", view: "info" },
+      { id: "sources", label: "Data Sources", icon: "▱", view: "info" },
+      { id: "logs", label: "Audit Logs", icon: "▤", view: "info" }
+    ]}
+  ],
+  sectors: ["Social Development"],
     { section: "TOOLS", items: [
       { id: "explorer", label: "Data Explorer", icon: "▦" },
       { id: "compare", label: "Compare Districts", icon: "≋" },
