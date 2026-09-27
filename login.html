@@ -16,11 +16,11 @@ label{display:block;font-size:11px;color:#cbd5e1;letter-spacing:.05em;margin:14p
 input{width:100%;padding:12px 14px;border-radius:9px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#fff;font-size:14px}
 input:focus{outline:none;border-color:#7c3aed;background:rgba(124,58,237,0.08)}
 button{width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#4f25d8);color:#fff;font-weight:600;font-size:14px;letter-spacing:.03em;cursor:pointer}
+button:hover{opacity:0.95}
 .error{margin-top:14px;padding:10px 12px;border-radius:8px;font-size:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;display:none}
 .error.show{display:block}
-.hint{margin-top:24px;padding:12px;border-radius:9px;background:rgba(124,58,237,0.08);border:1px dashed rgba(124,58,237,0.3);font-size:11px;color:#c4b5fd;line-height:1.6}
-.hint b{color:#a78bfa}
-.back{display:inline-block;margin-top:18px;font-size:11px;color:#94a3b8;text-decoration:none}
+.back{display:inline-block;margin-top:22px;font-size:11px;color:#94a3b8;text-decoration:none}
+.back:hover{color:#c4b5fd}
 </style>
 </head>
 <body>
@@ -30,22 +30,12 @@ button{width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;backg
   <p class="sub">Use the credentials provided by your institution.</p>
   <form id="login-form">
     <label for="email">Email</label>
-    <input type="email" id="email" placeholder="your.name@institution.co.za" required>
+    <input type="email" id="email" placeholder="your.name@institution.co.za" required autocomplete="username">
     <label for="password">Password</label>
-    <input type="password" id="password" placeholder="••••••••" required>
+    <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
     <button type="submit">Sign in →</button>
     <div class="error" id="error">Invalid credentials. Please try again.</div>
   </form>
-  <div class="hint">
-    <b>Demo credentials</b><br>
-    admin@avva.demo / admin123<br>
-    kzn@avva.demo / kzn123<br>
-    health@avva.demo / health123<br>
-    mfg@avva.demo / mfg123<br>
-    social@avva.demo / social123<br>
-    hennessy@avva.demo / brand123<br>
-    reemerge@avva.demo / reemerge123
-  </div>
   <a href="index.html" class="back">← Back to home</a>
 </div>
 
