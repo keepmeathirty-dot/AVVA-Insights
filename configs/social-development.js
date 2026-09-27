@@ -9,6 +9,8 @@ window.AVVA_CONFIG = {
 
   term: { entity: "Organisation", entityPlural: "Organisations", entityLower: "organisation", entityLowerPlural: "organisations" },
 
+  sectors: ["Social Development"],
+
   geoScope: "districts",
 
   map: {
@@ -104,7 +106,7 @@ window.AVVA_CONFIG = {
     ]
   },
 
-   navigation: [
+  navigation: [
     { section: "", items: [
       { id: "command", label: "Command Centre", icon: "⌂", view: "map" },
       { id: "ngos", label: "NGO Observatory", icon: "◎", view: "map" },
@@ -128,20 +130,6 @@ window.AVVA_CONFIG = {
       { id: "users", label: "User Management", icon: "♧", view: "info" },
       { id: "sources", label: "Data Sources", icon: "▱", view: "info" },
       { id: "logs", label: "Audit Logs", icon: "▤", view: "info" }
-    ]}
-  ],
-  sectors: ["Social Development"],
-    { section: "TOOLS", items: [
-      { id: "explorer", label: "Data Explorer", icon: "▦" },
-      { id: "compare", label: "Compare Districts", icon: "≋" },
-      { id: "alerts", label: "Alerts", icon: "♧" },
-      { id: "audit", label: "Audit Feed", icon: "▢" }
-    ]},
-    { section: "ADMIN", items: [
-      { id: "settings", label: "Workspace Settings", icon: "⚙" },
-      { id: "users", label: "User Management", icon: "♧" },
-      { id: "sources", label: "Data Sources", icon: "▱" },
-      { id: "logs", label: "Audit Logs", icon: "▤" }
     ]}
   ],
 
