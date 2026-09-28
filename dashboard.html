@@ -427,6 +427,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <div class="toast" id="toast"></div>
 
 <script src="configs/registry.js"></script>
+<script src="configs/accounts.js"></script>
 <script>
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -463,7 +464,8 @@ const activeEntry = registry.find(w => w.id === requestedId)
                  || registry[0];
 
 /* ================= ACTIVE USER ROLE ================= */
-const USER_ROLE = activeEntry.userRole || "viewer";
+const OVERRIDE = sessionStorage.getItem('avva_role_override_' + activeEntry.id);
+const USER_ROLE = OVERRIDE || activeEntry.userRole || "viewer";
 const roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: "Viewer", hide: [] };
 
 /* ================= CONFIG LOADER ================= */
@@ -568,10 +570,13 @@ function renderAll(C) {
   const rolePill = $('#role-pill');
   const roleMenu = document.createElement('div');
   roleMenu.className = 'role-menu';
-  roleMenu.innerHTML = `<div class="hint">DEMO · PREVIEW AS ROLE</div>` +
+    roleMenu.innerHTML = `<div class="hint">DEMO · PREVIEW AS ROLE</div>` +
     Object.entries(window.AVVA_ROLE_RULES || {}).map(([key, r]) =>
       `<button data-role="${key}" class="${key === USER_ROLE ? 'active' : ''}">${r.label}</button>`
-    ).join('');
+    ).join('') +
+    `<div style="border-top:1px solid #e9edf3;margin-top:4px;padding-top:4px">
+      <button data-role="__reset__" style="color:#94a3b8;font-size:11px">↺ Reset to my role</button>
+    </div>`;
 
   // Position the menu relative to the pill
   rolePill.style.position = 'relative';
@@ -583,16 +588,21 @@ function renderAll(C) {
   });
   document.addEventListener('click', () => roleMenu.classList.remove('show'));
 
-  roleMenu.querySelectorAll('button').forEach(b => {
+     roleMenu.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', () => {
       const newRole = b.dataset.role;
-      const updated = JSON.parse(JSON.stringify(session));
-      if (!updated.workspaces["*"]) {
-        updated.workspaces = { ...updated.workspaces, [C.id]: newRole };
+
+      if (newRole === '__reset__') {
+        // Remove the demo override — revert to the user's real role
+        sessionStorage.removeItem('avva_role_override_' + C.id);
+        toast('Reset to your actual role');
+      } else {
+        // Store the demo override — does NOT touch the real session
+        sessionStorage.setItem('avva_role_override_' + C.id, newRole);
+        toast(`Previewing as ${(window.AVVA_ROLE_RULES[newRole] || {}).label}`);
       }
-      localStorage.setItem('avva_session', JSON.stringify(updated));
-      toast(`Viewing as ${(window.AVVA_ROLE_RULES[newRole] || {}).label}`);
-      setTimeout(() => window.location.reload(), 500);
+
+      setTimeout(() => window.location.reload(), 400);
     });
   });
 
