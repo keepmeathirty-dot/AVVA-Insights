@@ -196,6 +196,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         </div>
         <button class="circle-button" id="bell" aria-label="Notifications">♧</button>
         <div class="profile"><span class="avatar" id="user-initials">—</span><span id="user-name">Loading…</span></div>
+                <a class="signout" href="picker.html" title="Switch workspace" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;color:#4f25d8;border-color:#e5e9f2;background:#f0eeff">⇄ Switch workspace</a>
         <button class="signout" id="signout">Sign out</button>
       </div>
     </header>
@@ -455,6 +456,7 @@ let CONFIG = null;
     document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined.</div>';
     return;
   }
+    localStorage.setItem('avva_last_workspace', CONFIG.id);
   renderAll(CONFIG);
 })();
 
@@ -535,10 +537,11 @@ function renderAll(C) {
       <strong>${w.label}</strong><span>${w.description}</span>
     </button>
   `).join('');
-  menu.querySelectorAll('button').forEach(b => {
+   menu.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', () => {
       const id = b.dataset.ws;
       if (id === C.id) { menu.classList.remove('show'); return; }
+      localStorage.setItem('avva_last_workspace', id);
       window.location.href = `dashboard.html?workspace=${id}`;
     });
   });
