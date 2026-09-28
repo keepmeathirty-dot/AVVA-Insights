@@ -3,27 +3,15 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AVVA Insights · Select workspace</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
 :root{
-  --navy:#0f2942;
-  --teal:#149c8c;
-  --teal-soft:#e6f6f3;
-  --bg:#f7f9fb;
-  --border:#e8ecf1;
-  --muted:#64798e;
-  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  color:var(--navy);
+  --navy:#0f2942;--teal:#149c8c;--teal-soft:#e6f6f3;
+  --bg:#f7f9fb;--border:#e8ecf1;--muted:#64798e;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--navy);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
-
-.topbar{
-  background:#fff;
-  border-bottom:1px solid var(--border);
-  padding:18px 40px;
-  display:flex;justify-content:space-between;align-items:center;
-}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:18px 40px;display:flex;justify-content:space-between;align-items:center}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.08em;font-size:15px;color:var(--navy);text-decoration:none}
 .logo-mark{width:34px;height:34px;border-radius:6px;background:linear-gradient(135deg,var(--navy),var(--teal));display:grid;place-items:center;color:#fff;font-size:16px;font-weight:900}
 .logo-sub{display:block;font-size:9px;letter-spacing:.28em;color:var(--muted);font-weight:700;margin-top:2px}
@@ -33,66 +21,22 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
 .user-area .role{color:var(--muted);font-size:11px;display:block}
 .signout{font-size:11px;color:var(--muted);text-decoration:none;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer}
 .signout:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
-
-.main{
-  flex:1;max-width:1200px;margin:0 auto;width:100%;
-  padding:60px 40px;
-}
+.main{flex:1;max-width:1200px;margin:0 auto;width:100%;padding:60px 40px}
 .title{font-size:34px;letter-spacing:-.03em;font-weight:800;margin-bottom:8px}
 .subtitle{color:var(--muted);font-size:14px;margin-bottom:40px}
-
-.cards{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
-  gap:16px;
-}
-.ws-card{
-  background:#fff;
-  border:1.5px solid var(--border);
-  border-radius:14px;
-  padding:24px;
-  cursor:pointer;
-  transition:transform .12s,border-color .12s,box-shadow .12s;
-  display:flex;flex-direction:column;gap:14px;
-  position:relative;
-}
-.ws-card:hover{
-  transform:translateY(-3px);
-  border-color:var(--teal);
-  box-shadow:0 12px 32px rgba(15,41,66,.08);
-}
-.ws-card .last-used{
-  position:absolute;top:14px;right:14px;
-  background:var(--teal-soft);color:var(--teal);
-  font-size:9px;font-weight:800;letter-spacing:.1em;
-  padding:3px 8px;border-radius:10px;
-}
-.ws-icon{
-  width:52px;height:52px;border-radius:12px;
-  background:var(--bg);
-  display:grid;place-items:center;font-size:26px;
-}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.ws-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:24px;cursor:pointer;transition:transform .12s,border-color .12s,box-shadow .12s;display:flex;flex-direction:column;gap:14px;position:relative}
+.ws-card:hover{transform:translateY(-3px);border-color:var(--teal);box-shadow:0 12px 32px rgba(15,41,66,.08)}
+.ws-card .last-used{position:absolute;top:14px;right:14px;background:var(--teal-soft);color:var(--teal);font-size:9px;font-weight:800;letter-spacing:.1em;padding:3px 8px;border-radius:10px}
+.ws-icon{width:52px;height:52px;border-radius:12px;background:var(--bg);display:grid;place-items:center;font-size:26px}
 .ws-name{font-size:16px;font-weight:700;color:var(--navy);letter-spacing:-.01em}
 .ws-desc{font-size:12.5px;color:var(--muted);line-height:1.5}
-.ws-meta{
-  display:flex;justify-content:space-between;align-items:center;
-  border-top:1px solid var(--border);padding-top:12px;margin-top:4px;
-  font-size:10px;color:var(--muted);letter-spacing:.05em;
-}
+.ws-meta{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;margin-top:4px;font-size:10px;color:var(--muted);letter-spacing:.05em}
 .ws-meta .open{color:var(--teal);font-weight:700;letter-spacing:.06em}
-
-.empty{
-  text-align:center;padding:80px 20px;color:var(--muted);
-  grid-column:1/-1;
-}
+.role-badge{background:#f0eeff;color:#4f25d8;padding:3px 8px;border-radius:8px;font-weight:800;letter-spacing:.06em}
+.empty{text-align:center;padding:80px 20px;color:var(--muted);grid-column:1/-1}
 .empty h2{color:var(--navy);margin-bottom:10px}
-
-@media(max-width:650px){
-  .topbar{padding:14px 20px}
-  .main{padding:32px 20px}
-  .title{font-size:26px}
-  .user-area .name,.user-area .role{display:none}
-}
+@media(max-width:650px){.topbar{padding:14px 20px}.main{padding:32px 20px}.title{font-size:26px}.user-area .name,.user-area .role{display:none}}
 </style>
 </head>
 <body>
@@ -104,7 +48,7 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
   </a>
   <div class="user-area">
     <span class="avatar" id="user-initials">—</span>
-    <span><b class="name" id="user-name">Loading…</span></b>
+    <span><b class="name" id="user-name">Loading…</b><span class="role" id="user-role"></span></span>
     <button class="signout" id="signout">Sign out</button>
   </div>
 </header>
@@ -116,6 +60,7 @@ body{background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
 </main>
 
 <script src="configs/registry.js"></script>
+<script src="configs/accounts.js"></script>
 <script>
 const $ = sel => document.querySelector(sel);
 
@@ -126,20 +71,29 @@ let session;
 try { session = JSON.parse(sessionRaw); }
 catch (e) { window.location.href = 'login.html'; throw e; }
 
-/* ---------- Filter registry ---------- */
-const registry = (window.AVVA_WORKSPACES || []).filter(w =>
-  session.workspaces.includes('*') || session.workspaces.includes(w.id)
-);
+/* ---------- Build accessible workspace list ---------- */
+const registry = window.AVVA_WORKSPACES || [];
+const roleRules = window.AVVA_ROLE_RULES || {};
 
-/* ---------- If only one workspace, skip the picker ---------- */
-if (registry.length === 1) {
-  window.location.href = `dashboard.html?workspace=${registry[0].id}`;
+let accessible;
+if (session.workspaces["*"]) {
+  accessible = registry.map(w => ({ ...w, role: session.workspaces["*"] }));
+} else {
+  accessible = registry
+    .filter(w => session.workspaces[w.id])
+    .map(w => ({ ...w, role: session.workspaces[w.id] }));
+}
+
+/* ---------- Single workspace → skip picker ---------- */
+if (accessible.length === 1) {
+  window.location.href = `dashboard.html?workspace=${accessible[0].id}`;
   throw new Error('Single workspace — skipping picker');
 }
 
 /* ---------- User details ---------- */
 $('#user-initials').textContent = (session.name || 'U').split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase();
 $('#user-name').textContent = session.name;
+$('#user-role').textContent = session.role;
 $('#subtitle').textContent = `Welcome back, ${session.name.split(' ')[0]}. Choose which workspace to open.`;
 
 /* ---------- Sign out ---------- */
@@ -148,7 +102,7 @@ $('#signout').addEventListener('click', () => {
   window.location.href = 'index.html';
 });
 
-/* ---------- Workspace icons (emoji) ---------- */
+/* ---------- Icons ---------- */
 const ICONS = {
   'kzn-doa': '🌾',
   'hennessy': '◆',
@@ -157,34 +111,36 @@ const ICONS = {
   'social-development': '🤝'
 };
 
-/* ---------- Remember last used ---------- */
+/* ---------- Last used ---------- */
 const lastUsed = localStorage.getItem('avva_last_workspace') || '';
 
-/* ---------- Render workspace cards ---------- */
-$('#cards').innerHTML = registry.map(w => `
-  <div class="ws-card" data-ws="${w.id}">
-    ${w.id === lastUsed ? '<span class="last-used">LAST USED</span>' : ''}
-    <div class="ws-icon">${ICONS[w.id] || '●'}</div>
-    <div class="ws-name">${w.label}</div>
-    <div class="ws-desc">${w.description}</div>
-    <div class="ws-meta">
-      <span>WORKSPACE ID: ${w.id.toUpperCase()}</span>
-      <span class="open">OPEN →</span>
-    </div>
-  </div>
-`).join('');
-
-document.querySelectorAll('.ws-card').forEach(card => {
-  card.addEventListener('click', () => {
-    const id = card.dataset.ws;
-    localStorage.setItem('avva_last_workspace', id);
-    window.location.href = `dashboard.html?workspace=${id}`;
-  });
-});
-
-/* ---------- If registry is empty ---------- */
-if (!registry.length) {
+/* ---------- Render cards ---------- */
+if (!accessible.length) {
   $('#cards').innerHTML = '<div class="empty"><h2>No workspaces available</h2><p>Your account has no workspace access. Contact your administrator.</p></div>';
+} else {
+  $('#cards').innerHTML = accessible.map(w => {
+    const roleLabel = (roleRules[w.role] && roleRules[w.role].label) || w.role;
+    return `
+      <div class="ws-card" data-ws="${w.id}">
+        ${w.id === lastUsed ? '<span class="last-used">LAST USED</span>' : ''}
+        <div class="ws-icon">${ICONS[w.id] || '●'}</div>
+        <div class="ws-name">${w.label}</div>
+        <div class="ws-desc">${w.description}</div>
+        <div class="ws-meta">
+          <span class="role-badge">${roleLabel.toUpperCase()}</span>
+          <span class="open">OPEN →</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  document.querySelectorAll('.ws-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.ws;
+      localStorage.setItem('avva_last_workspace', id);
+      window.location.href = `dashboard.html?workspace=${id}`;
+    });
+  });
 }
 </script>
 
