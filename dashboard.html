@@ -21,10 +21,10 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .section-label{font-size:10px;color:#7888a9;letter-spacing:.11em;font-weight:800;margin:22px 14px 7px}
 .sidebar-bottom{margin-top:auto;border:1px solid #e9ecf4;border-radius:11px;padding:13px;background:#fcfdff}
 .sidebar-bottom b{display:block;margin-bottom:5px}.sidebar-bottom span{font-size:12px;color:#71809c}
-.main{min-width:0}.topbar{height:72px;background:#fff;border-bottom:1px solid #ebedf4;display:flex;align-items:center;padding:0 25px;gap:16px}
+.main{min-width:0}.topbar{height:72px;background:#fff;border-bottom:1px solid #ebedf4;display:flex;align-items:center;padding:0 20px;gap:12px;overflow:hidden}
 .workspace-wrap{position:relative}
 .workspace-switch{border:1px solid #e5e9f2;border-radius:10px;background:#fff;padding:7px 10px;display:flex;gap:9px;align-items:center;min-width:180px;max-width:210px;cursor:pointer;text-align:left;overflow:hidden}
-.workspace-switch i{font-style:normal;font-size:23px;color:var(--accent-primary);background:var(--accent-light);border-radius:8px;padding:4px}
+.workspace-switch i{font-style:normal;font-size:20px;color:var(--accent-primary);background:var(--accent-light);border-radius:8px;padding:4px;flex-shrink:0}
 .workspace-switch small{display:block;color:#60708b;font-size:11px}
 .workspace-switch strong{display:block;font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .workspace-menu{position:absolute;top:100%;left:0;margin-top:6px;background:#fff;border:1px solid #e5e9f2;border-radius:10px;box-shadow:0 12px 32px #2530521f;padding:6px;min-width:300px;display:none;z-index:100}
@@ -36,18 +36,18 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .top-title{border-left:1px solid #edf0f5;padding-left:14px;min-width:0;flex:1;overflow:hidden}
 .top-title h1{font-size:15px;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-title p{font-size:11px;color:#71809c;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.top-actions{margin-left:auto;display:flex;gap:13px;align-items:center;position:relative}
+.top-actions{display:flex;gap:10px;align-items:center;position:relative;flex-shrink:0}
 .search-wrap{position:relative}
 .search{height:34px;border:1px solid #e3e8f1;border-radius:8px;padding:0 10px;width:170px;font-size:12px}
 .search-matches{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e3e8f1;border-radius:8px;margin-top:4px;padding:8px;font-size:11px;color:#536382;display:none;box-shadow:0 8px 20px #25305211;z-index:50}
 .search-matches.show{display:block}.search-matches b{color:var(--accent-primary)}
 .circle-button{border:0;background:#fff;font-size:18px;color:#536382;position:relative}
-.avatar{background:#16b8ad;color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:12px}
+.avatar{background:#16b8ad;color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:12px;flex-shrink:0}
 .profile{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px}
 .profile small{display:block;color:#71809c}
 .signout{font-size:10px;color:#94a3b8;text-decoration:none;margin-left:8px;padding:5px 8px;border-radius:6px;border:1px solid #e5e9f2;cursor:pointer;background:#fff;white-space:nowrap}
 .signout:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
-.role-pill{background:#f0eeff;color:#4f25d8;border:1px solid #d8ccff;padding:6px 10px;border-radius:8px;font-size:10px;font-weight:800;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.role-pill{background:#f0eeff;color:#4f25d8;border:1px solid #d8ccff;padding:5px 9px;border-radius:8px;font-size:10px;font-weight:800;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;position:relative;white-space:nowrap}
 .role-pill:hover{background:#e5ddff}
 .role-menu{position:absolute;top:100%;right:0;margin-top:6px;background:#fff;border:1px solid #e5e9f2;border-radius:10px;box-shadow:0 12px 32px #2530521f;padding:6px;min-width:200px;display:none;z-index:200}
 .role-menu.show{display:block}
@@ -177,14 +177,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .toast.show{display:block}
 .leaflet-popup-content{font-size:12px;line-height:1.5}
 .empty-state{text-align:center;padding:60px 20px;color:#94a3b8;font-size:13px}
-@media(max-width:1350px){
-  .metrics{grid-template-columns:repeat(4,1fr)}
-  .grid{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr)}
-  .right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}
-  .bottom{grid-template-columns:repeat(2,1fr)}
-  #user-name{display:none}
-}
-@media(max-width:900px){.app{display:block}.sidebar{position:fixed;left:0;transform:translateX(-100%);transition:transform .2s;width:228px;box-shadow:12px 0 30px #0b174122}.sidebar.open{transform:translateX(0)}.topbar{padding:0 14px}.workspace-switch{min-width:0}.top-title{display:none}.content{padding:14px}.search{width:170px}.grid{grid-template-columns:1fr}.right{grid-column:auto}.map-panel,.zoom-panel{height:480px}.field-row{grid-template-columns:1fr}}
+@media(max-width:1350px){.metrics{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.bottom{grid-template-columns:repeat(2,1fr)}#user-name{display:none}}
+@media(max-width:900px){.app{display:block}.sidebar{position:fixed;left:0;transform:translateX(-100%);transition:transform .2s;width:228px;box-shadow:12px 0 30px #0b174122}.sidebar.open{transform:translateX(0)}.topbar{padding:0 14px}.workspace-switch{min-width:0}.top-title{display:none}.content{padding:14px}.search{width:140px}.grid{grid-template-columns:1fr}.right{grid-column:auto}.map-panel,.zoom-panel{height:480px}.field-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -206,16 +200,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
       <div class="top-title"><h1 id="page-title"></h1><p id="page-subtitle"></p></div>
       <div class="top-actions">
         <div class="search-wrap">
-          <input class="search" id="search" aria-label="Search dashboard" placeholder="⌕  Search region, sector, programme...">
+          <input class="search" id="search" aria-label="Search dashboard" placeholder="⌕  Search...">
           <div class="search-matches" id="search-matches"></div>
         </div>
         <button class="circle-button" id="bell" aria-label="Notifications">♧</button>
         <div class="profile"><span class="avatar" id="user-initials">—</span><span id="user-name">Loading…</span></div>
-        <button class="role-pill" id="role-pill" title="Demo: switch role to preview other views">
+        <button class="role-pill" id="role-pill" title="Demo: switch role">
           <span id="role-label">LOADING</span>
           <span style="opacity:.6;font-size:9px">▾</span>
         </button>
-        <a class="signout" href="picker.html" title="Switch workspace" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;color:#4f25d8;border-color:#e5e9f2;background:#f0eeff">⇄ Switch workspace</a>
+        <a class="signout" href="picker.html" title="Switch workspace">⇄ Switch</a>
         <button class="signout" id="signout">Sign out</button>
       </div>
     </header>
@@ -506,6 +500,70 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
 }
 
+/* ================= GEOJSON BOUNDARIES ================= */
+/* Real KZN district shapes from geo/kzn-districts.geojson (UN OCHA HDX).
+   Falls back to rectangles if the file fails to load. */
+let GEO_DATA = null;
+let GEO_LOADING = null;
+
+function normaliseName(str) {
+  if (!str) return '';
+  return String(str)
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/-/g, '')
+    .replace(/districtmunicipality/g, '')
+    .replace(/metropolitanmunicipality/g, '')
+    .replace(/municipality/g, '')
+    .trim();
+}
+
+function loadGeoBoundaries() {
+  if (GEO_DATA) return Promise.resolve(GEO_DATA);
+  if (GEO_LOADING) return GEO_LOADING;
+
+  GEO_LOADING = fetch('geo/kzn-districts.geojson')
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => {
+      const lookup = {};
+      data.features.forEach(f => {
+        const rawName = f.properties.ADM2_EN || f.properties.ADM2_REF || f.properties.name || '';
+        const key = normaliseName(rawName);
+        if (key) lookup[key] = f.geometry;
+      });
+      GEO_DATA = lookup;
+      console.log('[AVVA] Loaded', Object.keys(lookup).length, 'district boundaries');
+      return GEO_DATA;
+    })
+    .catch(err => {
+      console.warn('[AVVA] GeoJSON load failed, using rectangles:', err);
+      GEO_DATA = null;
+      return null;
+    });
+
+  return GEO_LOADING;
+}
+
+function buildFeatures(dataObj, geoLookup) {
+  return Object.keys(dataObj).map(name => {
+    const d = dataObj[name];
+    const key = normaliseName(name);
+    const props = { name, ...d };
+
+    if (geoLookup && geoLookup[key]) {
+      return { type: "Feature", properties: props, geometry: geoLookup[key] };
+    }
+    const [[south, west], [north, east]] = d.bounds;
+    return {
+      type: "Feature", properties: props,
+      geometry: {
+        type: "Polygon",
+        coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]]
+      }
+    };
+  });
+}
+
 /* ================= PROGRAMMES STORAGE ================= */
 function getPostedProgrammes(workspaceId) {
   try {
@@ -560,17 +618,15 @@ function renderAll(C) {
   $('#quality-sub').textContent = C.quality.subtitle;
   $('#top-list-title').textContent = `Top Regions by ${C.primaryMetricLabel}`;
 
-  /* ---------- User profile ---------- */
   $('#user-initials').textContent = (session.name || 'U').split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase();
   $('#user-name').innerHTML = `${session.name}<small>${session.role}</small>`;
 
   /* ---------- Role badge + demo role switcher ---------- */
   $('#role-label').textContent = roleRules.label.toUpperCase();
-
   const rolePill = $('#role-pill');
   const roleMenu = document.createElement('div');
   roleMenu.className = 'role-menu';
-    roleMenu.innerHTML = `<div class="hint">DEMO · PREVIEW AS ROLE</div>` +
+  roleMenu.innerHTML = `<div class="hint">DEMO · PREVIEW AS ROLE</div>` +
     Object.entries(window.AVVA_ROLE_RULES || {}).map(([key, r]) =>
       `<button data-role="${key}" class="${key === USER_ROLE ? 'active' : ''}">${r.label}</button>`
     ).join('') +
@@ -578,7 +634,6 @@ function renderAll(C) {
       <button data-role="__reset__" style="color:#94a3b8;font-size:11px">↺ Reset to my role</button>
     </div>`;
 
-  // Position the menu relative to the pill
   rolePill.style.position = 'relative';
   rolePill.appendChild(roleMenu);
 
@@ -588,31 +643,26 @@ function renderAll(C) {
   });
   document.addEventListener('click', () => roleMenu.classList.remove('show'));
 
-     roleMenu.querySelectorAll('button').forEach(b => {
+  roleMenu.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', () => {
       const newRole = b.dataset.role;
-
       if (newRole === '__reset__') {
-        // Remove the demo override — revert to the user's real role
         sessionStorage.removeItem('avva_role_override_' + C.id);
         toast('Reset to your actual role');
       } else {
-        // Store the demo override — does NOT touch the real session
         sessionStorage.setItem('avva_role_override_' + C.id, newRole);
         toast(`Previewing as ${(window.AVVA_ROLE_RULES[newRole] || {}).label}`);
       }
-
       setTimeout(() => window.location.reload(), 400);
     });
   });
 
-  /* ---------- Sign out ---------- */
   $('#signout').addEventListener('click', () => {
     localStorage.removeItem('avva_session');
     window.location.href = 'index.html';
   });
 
-  /* ---------- Workspace switcher menu ---------- */
+  /* ---------- Workspace switcher ---------- */
   const menu = $('#workspace-menu');
   menu.innerHTML = registry.map(w => `
     <button data-ws="${w.id}" class="${w.id === C.id ? 'active' : ''}">
@@ -642,10 +692,7 @@ function renderSidebar(C) {
   let firstBtn = null;
 
   C.navigation.forEach(group => {
-    // Filter items based on role rules
     const visibleItems = group.items.filter(item => !roleRules.hide.includes(item.id));
-
-    // If a whole section is empty, skip it entirely (including its label)
     if (!visibleItems.length) return;
 
     if (group.section) {
@@ -804,7 +851,7 @@ function renderCommandCentre(C) {
     return `<div class="prog"><strong>${name}</strong><span>${display} ${C.primaryMetricLabel.toLowerCase()}</span><div class="bar-line"><i style="width:${(val / maxVal * 100).toFixed(0)}%"></i></div></div>`;
   }).join('');
 
-  /* ---------- MAP ---------- */
+  /* ---------- MAP (with real GeoJSON) ---------- */
   const map = L.map('map', { center: C.map.center, zoom: C.map.zoom, zoomControl: false, scrollWheelZoom: true });
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -825,7 +872,7 @@ function renderCommandCentre(C) {
   let currentLayer = null;
   let currentData = null;
 
-    function buildLayer(dataObj, metricKey) {
+  function buildLayer(dataObj, metricKey) {
     const nms = Object.keys(dataObj);
     const values = nms.map(n => dataObj[n][metricKey] || 0);
     const min = Math.min(...values); const max = Math.max(...values);
@@ -857,6 +904,7 @@ function renderCommandCentre(C) {
       currentData = dataObj;
     });
   }
+
   function showDetail(p) {
     const rows = Object.entries(p).filter(([k,v]) => k !== 'bounds' && k !== 'name' && typeof v !== 'object')
       .map(([k,v]) => {
@@ -914,70 +962,6 @@ function renderCommandCentre(C) {
   $('#bell').addEventListener('click', () => toast('No live notifications in this prototype'));
 }
 
-/* ================= GEOJSON BOUNDARY LOADER ================= */
-let GEO_DATA = null;
-let GEO_LOADING = null;
-
-function normaliseName(str) {
-  if (!str) return '';
-  return String(str)
-    .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/-/g, '')
-    .replace(/districtmunicipality/g, '')
-    .replace(/metropolitanmunicipality/g, '')
-    .replace(/municipality/g, '')
-    .trim();
-}
-
-function loadGeoBoundaries() {
-  if (GEO_DATA) return Promise.resolve(GEO_DATA);
-  if (GEO_LOADING) return GEO_LOADING;
-
-  GEO_LOADING = fetch('geo/kzn-districts.geojson')
-    .then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(data => {
-      const lookup = {};
-      data.features.forEach(f => {
-        const rawName = f.properties.ADM2_EN || f.properties.ADM2_REF || f.properties.name || '';
-        const key = normaliseName(rawName);
-        if (key) lookup[key] = f.geometry;
-      });
-      GEO_DATA = lookup;
-      console.log('[AVVA] Loaded', Object.keys(lookup).length, 'district boundaries');
-      return GEO_DATA;
-    })
-    .catch(err => {
-      console.warn('[AVVA] GeoJSON load failed, using rectangles:', err);
-      GEO_DATA = null;
-      return null;
-    });
-
-  return GEO_LOADING;
-}
-
-function buildFeatures(dataObj, geoLookup) {
-  return Object.keys(dataObj).map(name => {
-    const d = dataObj[name];
-    const key = normaliseName(name);
-    const props = { name, ...d };
-
-    if (geoLookup && geoLookup[key]) {
-      return { type: "Feature", properties: props, geometry: geoLookup[key] };
-    }
-    const [[south, west], [north, east]] = d.bounds;
-    return {
-      type: "Feature", properties: props,
-      geometry: {
-        type: "Polygon",
-        coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]]
-      }
-    };
-  });
-}
 /* ================= FULL-WIDTH MAP VIEW ================= */
 let fullMapInstance = null;
 let fullMapLayer = null;
@@ -1036,7 +1020,7 @@ function renderFullMap(C, item) {
     return `rgb(${lerp(r1,r2,local)},${lerp(g1,g2,local)},${lerp(b1,b2,local)})`;
   }
 
-    function drawLayer(dataObj, metricKey) {
+  function drawLayer(dataObj, metricKey) {
     const nms = Object.keys(dataObj);
     const values = nms.map(n => dataObj[n][metricKey] || 0);
     const min = Math.min(...values); const max = Math.max(...values);
@@ -1388,7 +1372,7 @@ function renderCards(C, item) {
   }
 
   if (!cards.length) {
-    $('#cards-grid').innerHTML = '<div class="empty-state">Nothing to show yet. Click "+ New" to add the first item.</div>';
+    $('#cards-grid').innerHTML = '<div class="empty-state">Nothing to show yet.</div>';
     return;
   }
 
@@ -1420,13 +1404,13 @@ function renderInfo(C, item) {
   $('#info-title').textContent = item.label;
   $('#info-sub').textContent = item.subtitle || `${item.label} for ${C.workspaceName}`;
   const bodies = {
-    settings: `<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Configure branding, terminology, data sources, and permissions. On AWS this becomes a full settings interface.</p>`,
+    settings: `<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Configure branding, terminology, data sources, and permissions.</p>`,
     users: `<h3 style="margin:0 0 8px;font-size:14px">User Management</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Manage who has access to this workspace. Assign roles (Executive, Manager, Officer, Viewer, Administrator).</p>`,
     sources: `<h3 style="margin:0 0 8px;font-size:14px">Data Sources</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Connected systems: manual entry, CSV import, VulaScan feed, external APIs.</p>`,
     audit: `<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace.</p>`,
     logs: `<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace.</p>`
   };
-  $('#info-body').innerHTML = bodies[item.id] || `<h3 style="margin:0 0 8px;font-size:14px">${item.label}</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Part of the AVVA Insights platform. Full functionality enabled once connected to live data sources.</p>`;
+  $('#info-body').innerHTML = bodies[item.id] || `<h3 style="margin:0 0 8px;font-size:14px">${item.label}</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Part of the AVVA Insights platform.</p>`;
 }
 
 /* ================= BOTTOM-LEFT ================= */
