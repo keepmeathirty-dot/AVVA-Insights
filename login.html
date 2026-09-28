@@ -40,17 +40,8 @@ button:hover{opacity:0.95}
 </div>
 
 <script src="configs/registry.js"></script>
+<script src="configs/accounts.js"></script>
 <script>
-const ACCOUNTS = [
-  { email: "admin@avva.demo",    password: "admin123",    name: "AVVA Administrator",      role: "Platform Admin",    workspaces: ["*"] },
-  { email: "reemerge@avva.demo", password: "reemerge123", name: "Reemerge Staff",          role: "Portfolio Manager", workspaces: ["*"] },
-  { email: "kzn@avva.demo",      password: "kzn123",      name: "KZN Agriculture Officer", role: "Programme Officer", workspaces: ["kzn-doa"] },
-  { email: "health@avva.demo",   password: "health123",   name: "Health Fund Manager",     role: "Impact Manager",    workspaces: ["healthcare-fund"] },
-  { email: "mfg@avva.demo",      password: "mfg123",      name: "Manufacturing Lead",      role: "Programme Lead",    workspaces: ["manufacturing-fund"] },
-  { email: "social@avva.demo",   password: "social123",   name: "Social Development Lead", role: "Programme Lead",    workspaces: ["social-development"] },
-  { email: "hennessy@avva.demo", password: "brand123",    name: "Hennessy Brand Manager",  role: "Brand Manager",     workspaces: ["hennessy"] }
-];
-
 document.getElementById('login-form').addEventListener('submit', e => {
   e.preventDefault();
   const email = document.getElementById('email').value.trim().toLowerCase();
@@ -58,7 +49,8 @@ document.getElementById('login-form').addEventListener('submit', e => {
   const errEl = document.getElementById('error');
   errEl.classList.remove('show');
 
-  const account = ACCOUNTS.find(a => a.email.toLowerCase() === email && a.password === password);
+  const accounts = window.AVVA_ACCOUNTS || [];
+  const account = accounts.find(a => a.email.toLowerCase() === email && a.password === password);
 
   if (!account) {
     errEl.classList.add('show');
@@ -74,21 +66,24 @@ document.getElementById('login-form').addEventListener('submit', e => {
     signedInAt: Date.now()
   }));
 
-  // Determine accessible workspaces
+  // Determine accessible workspace IDs
   const registry = window.AVVA_WORKSPACES || [];
-  const accessible = registry.filter(w =>
-    account.workspaces.includes('*') || account.workspaces.includes(w.id)
-  );
+  let accessible = [];
+  if (account.workspaces["*"]) {
+    accessible = registry.map(w => ({ id: w.id, role: account.workspaces["*"] }));
+  } else {
+    accessible = registry
+      .filter(w => account.workspaces[w.id])
+      .map(w => ({ id: w.id, role: account.workspaces[w.id] }));
+  }
 
   if (accessible.length === 1) {
     // Single workspace — skip picker
     localStorage.setItem('avva_last_workspace', accessible[0].id);
     window.location.href = `dashboard.html?workspace=${accessible[0].id}`;
   } else if (accessible.length > 1) {
-    // Multiple — go to picker
     window.location.href = 'picker.html';
   } else {
-    // None — edge case
     errEl.textContent = 'Your account has no workspace access. Contact your administrator.';
     errEl.classList.add('show');
     localStorage.removeItem('avva_session');
