@@ -35,7 +35,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .workspace-menu span{font-size:11px;color:#70809b}
 .top-title{border-left:1px solid #edf0f5;padding-left:17px;min-width:0}
 .top-title h1{font-size:16px;margin:0 0 4px}.top-title p{font-size:12px;color:#71809c;margin:0}
-.top-actions{margin-left:auto;display:flex;gap:13px;align-items:center}
+.top-actions{margin-left:auto;display:flex;gap:13px;align-items:center;position:relative}
 .search-wrap{position:relative}
 .search{height:37px;border:1px solid #e3e8f1;border-radius:8px;padding:0 10px;width:240px}
 .search-matches{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e3e8f1;border-radius:8px;margin-top:4px;padding:8px;font-size:11px;color:#536382;display:none;box-shadow:0 8px 20px #25305211;z-index:50}
@@ -46,6 +46,14 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .profile small{display:block;color:#71809c}
 .signout{font-size:11px;color:#94a3b8;text-decoration:none;margin-left:12px;padding:6px 10px;border-radius:6px;border:1px solid #e5e9f2;cursor:pointer;background:#fff}
 .signout:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+.role-pill{background:#f0eeff;color:#4f25d8;border:1px solid #d8ccff;padding:6px 10px;border-radius:8px;font-size:10px;font-weight:800;letter-spacing:.06em;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit}
+.role-pill:hover{background:#e5ddff}
+.role-menu{position:absolute;top:100%;right:0;margin-top:6px;background:#fff;border:1px solid #e5e9f2;border-radius:10px;box-shadow:0 12px 32px #2530521f;padding:6px;min-width:200px;display:none;z-index:200}
+.role-menu.show{display:block}
+.role-menu button{display:block;width:100%;background:transparent;border:0;text-align:left;padding:9px 12px;border-radius:7px;cursor:pointer;font-size:12px;color:#1f2d4d;font-family:inherit}
+.role-menu button:hover{background:#f0eeff}
+.role-menu button.active{background:#f0eeff;color:#4f25d8;font-weight:700}
+.role-menu .hint{font-size:9px;color:#94a3b8;padding:6px 12px;letter-spacing:.05em;font-weight:700}
 .content{padding:14px 24px 28px;max-width:1720px;margin:auto}
 .view{display:none}.view.active{display:block}
 .sample{display:flex;align-items:center;gap:9px;background:var(--accent-light);color:var(--accent-primary);padding:9px 13px;border-radius:9px;font-size:12px;margin-bottom:12px}
@@ -196,7 +204,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         </div>
         <button class="circle-button" id="bell" aria-label="Notifications">♧</button>
         <div class="profile"><span class="avatar" id="user-initials">—</span><span id="user-name">Loading…</span></div>
-                <a class="signout" href="picker.html" title="Switch workspace" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;color:#4f25d8;border-color:#e5e9f2;background:#f0eeff">⇄ Switch workspace</a>
+        <button class="role-pill" id="role-pill" title="Demo: switch role to preview other views">
+          <span id="role-label">LOADING</span>
+          <span style="opacity:.6;font-size:9px">▾</span>
+        </button>
+        <a class="signout" href="picker.html" title="Switch workspace" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;color:#4f25d8;border-color:#e5e9f2;background:#f0eeff">⇄ Switch workspace</a>
         <button class="signout" id="signout">Sign out</button>
       </div>
     </header>
@@ -419,20 +431,35 @@ let session;
 try { session = JSON.parse(sessionRaw); }
 catch (e) { window.location.href = 'login.html'; throw e; }
 
-const registry = (window.AVVA_WORKSPACES || []).filter(w =>
-  session.workspaces.includes('*') || session.workspaces.includes(w.id)
-);
+/* ================= BUILD ACCESSIBLE WORKSPACE LIST ================= */
+const allWorkspaces = window.AVVA_WORKSPACES || [];
+let registry;
+
+if (session.workspaces["*"]) {
+  registry = allWorkspaces.map(w => ({ ...w, userRole: session.workspaces["*"] }));
+} else {
+  registry = allWorkspaces
+    .filter(w => session.workspaces[w.id])
+    .map(w => ({ ...w, userRole: session.workspaces[w.id] }));
+}
+
 if (!registry.length) {
   document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Your account has no workspace access.</div>';
   throw new Error('No workspace access');
 }
 
+/* ================= SELECT ACTIVE WORKSPACE ================= */
 const params = new URLSearchParams(window.location.search);
 const requestedId = params.get("workspace");
 const activeEntry = registry.find(w => w.id === requestedId)
                  || registry.find(w => w.default)
                  || registry[0];
 
+/* ================= ACTIVE USER ROLE ================= */
+const USER_ROLE = activeEntry.userRole || "viewer";
+const roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: "Viewer", hide: [] };
+
+/* ================= CONFIG LOADER ================= */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
@@ -456,10 +483,11 @@ let CONFIG = null;
     document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined.</div>';
     return;
   }
-    localStorage.setItem('avva_last_workspace', CONFIG.id);
+  localStorage.setItem('avva_last_workspace', CONFIG.id);
   renderAll(CONFIG);
 })();
 
+/* ================= TOAST ================= */
 const toastEl = $('#toast');
 let toastTimer;
 function toast(msg) {
@@ -523,21 +551,58 @@ function renderAll(C) {
   $('#quality-sub').textContent = C.quality.subtitle;
   $('#top-list-title').textContent = `Top Regions by ${C.primaryMetricLabel}`;
 
+  /* ---------- User profile ---------- */
   $('#user-initials').textContent = (session.name || 'U').split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase();
   $('#user-name').innerHTML = `${session.name}<small>${session.role}</small>`;
 
+  /* ---------- Role badge + demo role switcher ---------- */
+  $('#role-label').textContent = roleRules.label.toUpperCase();
+
+  const rolePill = $('#role-pill');
+  const roleMenu = document.createElement('div');
+  roleMenu.className = 'role-menu';
+  roleMenu.innerHTML = `<div class="hint">DEMO · PREVIEW AS ROLE</div>` +
+    Object.entries(window.AVVA_ROLE_RULES || {}).map(([key, r]) =>
+      `<button data-role="${key}" class="${key === USER_ROLE ? 'active' : ''}">${r.label}</button>`
+    ).join('');
+
+  // Position the menu relative to the pill
+  rolePill.style.position = 'relative';
+  rolePill.appendChild(roleMenu);
+
+  rolePill.addEventListener('click', (e) => {
+    e.stopPropagation();
+    roleMenu.classList.toggle('show');
+  });
+  document.addEventListener('click', () => roleMenu.classList.remove('show'));
+
+  roleMenu.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      const newRole = b.dataset.role;
+      const updated = JSON.parse(JSON.stringify(session));
+      if (!updated.workspaces["*"]) {
+        updated.workspaces = { ...updated.workspaces, [C.id]: newRole };
+      }
+      localStorage.setItem('avva_session', JSON.stringify(updated));
+      toast(`Viewing as ${(window.AVVA_ROLE_RULES[newRole] || {}).label}`);
+      setTimeout(() => window.location.reload(), 500);
+    });
+  });
+
+  /* ---------- Sign out ---------- */
   $('#signout').addEventListener('click', () => {
     localStorage.removeItem('avva_session');
     window.location.href = 'index.html';
   });
 
+  /* ---------- Workspace switcher menu ---------- */
   const menu = $('#workspace-menu');
   menu.innerHTML = registry.map(w => `
     <button data-ws="${w.id}" class="${w.id === C.id ? 'active' : ''}">
       <strong>${w.label}</strong><span>${w.description}</span>
     </button>
   `).join('');
-   menu.querySelectorAll('button').forEach(b => {
+  menu.querySelectorAll('button').forEach(b => {
     b.addEventListener('click', () => {
       const id = b.dataset.ws;
       if (id === C.id) { menu.classList.remove('show'); return; }
@@ -553,19 +618,27 @@ function renderAll(C) {
   setupPostProgramme(C);
 }
 
-/* ================= SIDEBAR ================= */
+/* ================= SIDEBAR (role-filtered) ================= */
 function renderSidebar(C) {
   const nav = $('#nav');
   nav.innerHTML = '';
   let firstBtn = null;
+
   C.navigation.forEach(group => {
+    // Filter items based on role rules
+    const visibleItems = group.items.filter(item => !roleRules.hide.includes(item.id));
+
+    // If a whole section is empty, skip it entirely (including its label)
+    if (!visibleItems.length) return;
+
     if (group.section) {
       const lbl = document.createElement('div');
       lbl.className = 'section-label';
       lbl.textContent = group.section;
       nav.appendChild(lbl);
     }
-    group.items.forEach(item => {
+
+    visibleItems.forEach(item => {
       const btn = document.createElement('button');
       btn.dataset.id = item.id;
       btn.dataset.label = item.label;
@@ -576,9 +649,11 @@ function renderSidebar(C) {
       if (!firstBtn) firstBtn = btn;
     });
   });
+
   if (firstBtn) firstBtn.classList.add('active');
 }
 
+/* ================= VIEW ACTIVATION ================= */
 function activateView(C, item, btn) {
   $$('#nav button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -712,6 +787,7 @@ function renderCommandCentre(C) {
     return `<div class="prog"><strong>${name}</strong><span>${display} ${C.primaryMetricLabel.toLowerCase()}</span><div class="bar-line"><i style="width:${(val / maxVal * 100).toFixed(0)}%"></i></div></div>`;
   }).join('');
 
+  /* ---------- MAP ---------- */
   const map = L.map('map', { center: C.map.center, zoom: C.map.zoom, zoomControl: false, scrollWheelZoom: true });
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -928,7 +1004,7 @@ function renderFullMap(C, item) {
   }
 }
 
-/* ================= PROGRAMMES RENDER (with delete) ================= */
+/* ================= PROGRAMMES RENDER ================= */
 function renderProgrammes(C) {
   try {
     const baseline = C.programmes.items || [];
@@ -1008,8 +1084,8 @@ function setupPostProgramme(C) {
     panel.setAttribute('aria-hidden', 'true');
   }
 
-  $('#open-post-programme-1').onclick = window.__avva_openPostPanel;
-  $('#open-post-programme-2').onclick = window.__avva_openPostPanel;
+  const p1 = $('#open-post-programme-1'); if (p1) p1.onclick = window.__avva_openPostPanel;
+  const p2 = $('#open-post-programme-2'); if (p2) p2.onclick = window.__avva_openPostPanel;
   $('#post-close').onclick = closePanel;
   $('#post-cancel').onclick = closePanel;
   backdrop.onclick = closePanel;
@@ -1259,7 +1335,7 @@ function renderInfo(C, item) {
   $('#info-sub').textContent = item.subtitle || `${item.label} for ${C.workspaceName}`;
   const bodies = {
     settings: `<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Configure branding, terminology, data sources, and permissions. On AWS this becomes a full settings interface.</p>`,
-    users: `<h3 style="margin:0 0 8px;font-size:14px">User Management</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Manage who has access to this workspace. Assign roles (Admin, Programme Manager, Viewer).</p>`,
+    users: `<h3 style="margin:0 0 8px;font-size:14px">User Management</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Manage who has access to this workspace. Assign roles (Executive, Manager, Officer, Viewer, Administrator).</p>`,
     sources: `<h3 style="margin:0 0 8px;font-size:14px">Data Sources</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Connected systems: manual entry, CSV import, VulaScan feed, external APIs.</p>`,
     audit: `<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace.</p>`,
     logs: `<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace.</p>`
