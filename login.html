@@ -39,6 +39,7 @@ button:hover{opacity:0.95}
   <a href="index.html" class="back">← Back to home</a>
 </div>
 
+<script src="configs/registry.js"></script>
 <script>
 const ACCOUNTS = [
   { email: "admin@avva.demo",    password: "admin123",    name: "AVVA Administrator",      role: "Platform Admin",    workspaces: ["*"] },
@@ -55,6 +56,7 @@ document.getElementById('login-form').addEventListener('submit', e => {
   const email = document.getElementById('email').value.trim().toLowerCase();
   const password = document.getElementById('password').value;
   const errEl = document.getElementById('error');
+  errEl.classList.remove('show');
 
   const account = ACCOUNTS.find(a => a.email.toLowerCase() === email && a.password === password);
 
@@ -63,6 +65,7 @@ document.getElementById('login-form').addEventListener('submit', e => {
     return;
   }
 
+  // Save session
   localStorage.setItem('avva_session', JSON.stringify({
     email: account.email,
     name: account.name,
@@ -70,7 +73,26 @@ document.getElementById('login-form').addEventListener('submit', e => {
     workspaces: account.workspaces,
     signedInAt: Date.now()
   }));
-  window.location.href = 'dashboard.html';
+
+  // Determine accessible workspaces
+  const registry = window.AVVA_WORKSPACES || [];
+  const accessible = registry.filter(w =>
+    account.workspaces.includes('*') || account.workspaces.includes(w.id)
+  );
+
+  if (accessible.length === 1) {
+    // Single workspace — skip picker
+    localStorage.setItem('avva_last_workspace', accessible[0].id);
+    window.location.href = `dashboard.html?workspace=${accessible[0].id}`;
+  } else if (accessible.length > 1) {
+    // Multiple — go to picker
+    window.location.href = 'picker.html';
+  } else {
+    // None — edge case
+    errEl.textContent = 'Your account has no workspace access. Contact your administrator.';
+    errEl.classList.add('show');
+    localStorage.removeItem('avva_session');
+  }
 });
 </script>
 </body>
