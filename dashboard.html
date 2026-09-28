@@ -825,33 +825,38 @@ function renderCommandCentre(C) {
   let currentLayer = null;
   let currentData = null;
 
-  function buildLayer(dataObj, metricKey) {
+    function buildLayer(dataObj, metricKey) {
     const nms = Object.keys(dataObj);
     const values = nms.map(n => dataObj[n][metricKey] || 0);
     const min = Math.min(...values); const max = Math.max(...values);
-    const features = nms.map(name => {
-      const d = dataObj[name];
-      const [[south,west],[north,east]] = d.bounds;
-      return { type:"Feature", properties:{ name, ...d },
-        geometry:{ type:"Polygon", coordinates:[[[west,south],[east,south],[east,north],[west,north],[west,south]]] } };
-    });
-    if (currentLayer) map.removeLayer(currentLayer);
-    currentLayer = L.geoJSON({ type:"FeatureCollection", features }, {
-      style: f => ({ fillColor: getColour(f.properties[metricKey]||0,min,max), weight:1.5, opacity:.9, color:'#fff', fillOpacity:.78 }),
-      onEachFeature: (f, layer) => {
-        const p = f.properties; const val = p[metricKey]||0;
-        const valDisplay = (metricKey === 'revenue' || metricKey === 'funding') ? fmtCurrencyM(val) : fmtNumber(val);
-        layer.bindTooltip(`<strong>${p.name}</strong><br>${valDisplay} ${C.primaryMetricLabel.toLowerCase()}`, { sticky:true });
-        layer.on({
-          mouseover: e => e.target.setStyle({ weight:3, color:C.accent.primary, fillOpacity:.9 }),
-          mouseout: e => currentLayer.resetStyle(e.target),
-          click: () => showDetail(p)
-        });
-      }
-    }).addTo(map);
-    currentData = dataObj;
-  }
 
+    loadGeoBoundaries().then(geoLookup => {
+      const features = buildFeatures(dataObj, geoLookup);
+
+      if (currentLayer) map.removeLayer(currentLayer);
+      currentLayer = L.geoJSON({ type: "FeatureCollection", features }, {
+        style: f => ({
+          fillColor: getColour(f.properties[metricKey] || 0, min, max),
+          weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78
+        }),
+        onEachFeature: (f, layer) => {
+          const p = f.properties; const val = p[metricKey] || 0;
+          const valDisplay = (metricKey === 'revenue' || metricKey === 'funding')
+            ? fmtCurrencyM(val) : fmtNumber(val);
+          layer.bindTooltip(
+            `<strong>${p.name}</strong><br>${valDisplay} ${C.primaryMetricLabel.toLowerCase()}`,
+            { sticky: true }
+          );
+          layer.on({
+            mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
+            mouseout: e => currentLayer.resetStyle(e.target),
+            click: () => showDetail(p)
+          });
+        }
+      }).addTo(map);
+      currentData = dataObj;
+    });
+  }
   function showDetail(p) {
     const rows = Object.entries(p).filter(([k,v]) => k !== 'bounds' && k !== 'name' && typeof v !== 'object')
       .map(([k,v]) => {
@@ -909,6 +914,70 @@ function renderCommandCentre(C) {
   $('#bell').addEventListener('click', () => toast('No live notifications in this prototype'));
 }
 
+/* ================= GEOJSON BOUNDARY LOADER ================= */
+let GEO_DATA = null;
+let GEO_LOADING = null;
+
+function normaliseName(str) {
+  if (!str) return '';
+  return String(str)
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/-/g, '')
+    .replace(/districtmunicipality/g, '')
+    .replace(/metropolitanmunicipality/g, '')
+    .replace(/municipality/g, '')
+    .trim();
+}
+
+function loadGeoBoundaries() {
+  if (GEO_DATA) return Promise.resolve(GEO_DATA);
+  if (GEO_LOADING) return GEO_LOADING;
+
+  GEO_LOADING = fetch('geo/kzn-districts.geojson')
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      const lookup = {};
+      data.features.forEach(f => {
+        const rawName = f.properties.ADM2_EN || f.properties.ADM2_REF || f.properties.name || '';
+        const key = normaliseName(rawName);
+        if (key) lookup[key] = f.geometry;
+      });
+      GEO_DATA = lookup;
+      console.log('[AVVA] Loaded', Object.keys(lookup).length, 'district boundaries');
+      return GEO_DATA;
+    })
+    .catch(err => {
+      console.warn('[AVVA] GeoJSON load failed, using rectangles:', err);
+      GEO_DATA = null;
+      return null;
+    });
+
+  return GEO_LOADING;
+}
+
+function buildFeatures(dataObj, geoLookup) {
+  return Object.keys(dataObj).map(name => {
+    const d = dataObj[name];
+    const key = normaliseName(name);
+    const props = { name, ...d };
+
+    if (geoLookup && geoLookup[key]) {
+      return { type: "Feature", properties: props, geometry: geoLookup[key] };
+    }
+    const [[south, west], [north, east]] = d.bounds;
+    return {
+      type: "Feature", properties: props,
+      geometry: {
+        type: "Polygon",
+        coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]]
+      }
+    };
+  });
+}
 /* ================= FULL-WIDTH MAP VIEW ================= */
 let fullMapInstance = null;
 let fullMapLayer = null;
@@ -967,37 +1036,37 @@ function renderFullMap(C, item) {
     return `rgb(${lerp(r1,r2,local)},${lerp(g1,g2,local)},${lerp(b1,b2,local)})`;
   }
 
-  function drawLayer(dataObj, metricKey) {
+    function drawLayer(dataObj, metricKey) {
     const nms = Object.keys(dataObj);
     const values = nms.map(n => dataObj[n][metricKey] || 0);
     const min = Math.min(...values); const max = Math.max(...values);
-    const features = nms.map(name => {
-      const d = dataObj[name];
-      const [[south,west],[north,east]] = d.bounds;
-      return {
-        type: "Feature",
-        properties: { name, ...d },
-        geometry: { type: "Polygon", coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]] }
-      };
-    });
 
-    if (fullMapLayer) fullMapInstance.removeLayer(fullMapLayer);
-    fullMapLayer = L.geoJSON({ type: "FeatureCollection", features }, {
-      style: f => ({
-        fillColor: getColour(f.properties[metricKey] || 0, min, max),
-        weight: 1.5, opacity: .9, color: '#fff', fillOpacity: .78
-      }),
-      onEachFeature: (f, layer) => {
-        const p = f.properties;
-        const val = p[metricKey] || 0;
-        const display = (metricKey === 'revenue' || metricKey === 'funding') ? 'R' + (val/1_000_000).toFixed(1) + 'm' : val.toLocaleString('en-ZA');
-        layer.bindTooltip(`<strong>${p.name}</strong><br>${display} ${C.primaryMetricLabel.toLowerCase()}`, { sticky: true });
-        layer.on({
-          mouseover: e => e.target.setStyle({ weight: 3, color: C.accent.primary, fillOpacity: .9 }),
-          mouseout: e => fullMapLayer.resetStyle(e.target)
-        });
-      }
-    }).addTo(fullMapInstance);
+    loadGeoBoundaries().then(geoLookup => {
+      const features = buildFeatures(dataObj, geoLookup);
+
+      if (fullMapLayer) fullMapInstance.removeLayer(fullMapLayer);
+      fullMapLayer = L.geoJSON({ type: "FeatureCollection", features }, {
+        style: f => ({
+          fillColor: getColour(f.properties[metricKey] || 0, min, max),
+          weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78
+        }),
+        onEachFeature: (f, layer) => {
+          const p = f.properties;
+          const val = p[metricKey] || 0;
+          const display = (metricKey === 'revenue' || metricKey === 'funding')
+            ? 'R' + (val/1_000_000).toFixed(1) + 'm'
+            : val.toLocaleString('en-ZA');
+          layer.bindTooltip(
+            `<strong>${p.name}</strong><br>${display} ${C.primaryMetricLabel.toLowerCase()}`,
+            { sticky: true }
+          );
+          layer.on({
+            mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
+            mouseout: e => fullMapLayer.resetStyle(e.target)
+          });
+        }
+      }).addTo(fullMapInstance);
+    });
   }
 
   drawLayer(C.districts, C.primaryMetric);
