@@ -358,16 +358,19 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <div class="cards-grid" id="cards-grid"></div>
       </section>
 
-      <section class="view" data-view="chat">
+           <section class="view" data-view="chat">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
           <div><h1 style="font-size:22px;margin:0 0 4px">AI Assistant</h1><p class="sub" style="font-size:12px">Ask questions about your workspace data</p></div>
-          <span class="pill pill-amber">Coming soon</span>
+          <span class="pill pill-amber" id="ai-mode-pill">Demo mode</span>
         </div>
         <div class="card panel chat-wrap">
           <div class="chat-messages" id="chat-messages">
-            <div class="chat-msg ai"><div class="who">AI</div><div class="bubble">Hi! I'm your AVVA Assistant. Once connected, I'll be able to answer questions about your workspace — funding, beneficiaries, districts, and impact. Real AI integration is coming.</div></div>
+            <div class="chat-msg ai"><div class="who">AI</div><div class="bubble">Hi! I'm your AVVA Assistant. Ask me about funding, districts, beneficiaries, or impact in this workspace.</div></div>
           </div>
-          <div class="chat-input"><input placeholder="Ask a question…" id="chat-input" disabled><button class="btn-primary" disabled>Send</button></div>
+          <div class="chat-input">
+            <input placeholder="Ask a question…" id="chat-input">
+            <button class="btn-primary" id="chat-send">Send</button>
+          </div>
         </div>
       </section>
 
@@ -422,6 +425,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 
 <script src="configs/registry.js"></script>
 <script src="configs/accounts.js"></script>
+<script src="configs/ai.js"></script>
 <script>
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -741,8 +745,9 @@ function activateView(C, item, btn) {
   } else if (view === 'cards') {
     document.querySelector('[data-view="cards"]').classList.add('active');
     renderCards(C, item);
-  } else if (view === 'chat') {
+    } else if (view === 'chat') {
     document.querySelector('[data-view="chat"]').classList.add('active');
+    renderChatView(C);
   } else if (view === 'form') {
     document.querySelector('[data-view="post-programme"]').classList.add('active');
     if (item.action === 'open-programme-form') openPostPanel();
@@ -1399,6 +1404,116 @@ function renderCards(C, item) {
   };
 }
 
+/* ================= AI ASSISTANT CHAT ================= */
+let chatHistory = [];
+
+function renderChatView(C) {
+  const cfg = window.AVVA_AI_CONFIG || {};
+  const modePill = document.getElementById('ai-mode-pill');
+  
+  if (cfg.demoMode) {
+    modePill.textContent = 'Demo mode';
+    modePill.className = 'pill pill-amber';
+  } else {
+    modePill.textContent = 'Live';
+    modePill.className = 'pill pill-green';
+  }
+
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('chat-send');
+  
+  // Remove existing listeners by cloning
+  const newSend = sendBtn.cloneNode(true);
+  sendBtn.parentNode.replaceChild(newSend, sendBtn);
+  
+  newSend.addEventListener('click', () => sendChatMessage(C));
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(C); }
+  });
+}
+
+function appendChatMsg(role, text) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role}`;
+  div.innerHTML = `<div class="who">${role === 'user' ? 'You' : 'AI'}</div><div class="bubble">${escapeHtml(text)}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+}
+
+function buildWorkspaceContext(C) {
+  const districts = Object.keys(C.districts || {}).slice(0, 5);
+  const totals = {};
+  Object.values(C.districts || {}).forEach(d => {
+    for (const k in d) if (typeof d[k] === 'number') totals[k] = (totals[k] || 0) + d[k];
+  });
+  return `Workspace: ${C.workspaceName}\nSector: ${(C.sectors || []).join(', ')}\nDistricts tracked: ${Object.keys(C.districts || {}).length}\nTop districts: ${districts.join(', ')}\nTotals: ${JSON.stringify(totals)}`;
+}
+
+function getDemoResponse(text, C) {
+  const cfg = window.AVVA_AI_CONFIG || {};
+  const demo = cfg.demoResponses || {};
+  const keywords = demo.keywords || {};
+  const lower = text.toLowerCase();
+  for (const [key, response] of Object.entries(keywords)) {
+    if (lower.includes(key)) return response;
+  }
+  return demo.default || "Demo response — configure the AWS Lambda proxy to enable real AI.";
+}
+
+async function sendChatMessage(C) {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  
+  appendChatMsg('user', text);
+  chatHistory.push({ role: 'user', content: text });
+  input.value = '';
+  
+  // Show typing indicator
+  const container = document.getElementById('chat-messages');
+  const typing = document.createElement('div');
+  typing.className = 'chat-msg ai';
+  typing.id = 'typing-indicator';
+  typing.innerHTML = `<div class="who">AI</div><div class="bubble">…</div>`;
+  container.appendChild(typing);
+  container.scrollTop = container.scrollHeight;
+  
+  const cfg = window.AVVA_AI_CONFIG || {};
+  
+  try {
+    let reply;
+    if (cfg.demoMode || cfg.proxyEndpoint === "__AWS_LAMBDA_ENDPOINT__") {
+      // Demo mode
+      await new Promise(r => setTimeout(r, 600));
+      reply = getDemoResponse(text, C);
+    } else {
+      // Real AI via Lambda proxy
+      const res = await fetch(cfg.proxyEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: chatHistory.slice(-10),
+          context: buildWorkspaceContext(C),
+          systemPrompt: cfg.systemPromptTemplate
+        })
+      });
+      const data = await res.json();
+      reply = data.reply || data.error || "No response from AI.";
+    }
+    
+    typing.remove();
+    appendChatMsg('ai', reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    typing.remove();
+    appendChatMsg('ai', 'Connection error: ' + err.message);
+  }
+}
 /* ================= INFO VIEW ================= */
 function renderInfo(C, item) {
   $('#info-title').textContent = item.label;
