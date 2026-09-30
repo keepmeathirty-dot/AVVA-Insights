@@ -378,10 +378,11 @@ programmes: {
     return String(key).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   }
 
-    function buildNavigation(geoLevel) {
+      function buildNavigation(geoLevel) {
     return [
       { section: '', items: [
         { id: 'command', label: 'Command Centre', icon: '⌂', view: 'map' },
+        { id: 'map-full', label: 'Geographic View', icon: '◎', view: 'map' },
         { id: 'geo', label: geoLevel === 'province' ? 'Province Analysis' : 'District Analysis', icon: '◇', view: 'table', table: { source: geoLevel === 'province' ? 'provinces' : 'districts' } },
         { id: 'records', label: 'All Records', icon: '▦', view: 'table', table: { source: 'districts' } },
         { id: 'post-programme', label: 'Post a Programme', icon: '＋', view: 'form', action: 'open-programme-form' },
@@ -395,7 +396,6 @@ programmes: {
       ]}
     ];
   }
-
   function getBoundsFor(name) {
     // Same as config files — approximate KZN rectangles as fallback
     const bounds = {
