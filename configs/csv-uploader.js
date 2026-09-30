@@ -13,7 +13,12 @@
 
   /* ---------- 1. CSV PARSER ---------- */
   // Handles quoted fields, escaped quotes, and CRLF/LF line endings
-  function parseCSV(text) {
+    function parseCSV(text) {
+    // Strip BOM
+    if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+    // Normalise line endings
+    text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
     const rows = [];
     let current = '';
     let row = [];
@@ -29,19 +34,41 @@
         else { current += c; }
       } else {
         if (c === '"') { inQuotes = true; }
-        else if (c === ',') { row.push(current.trim()); current = ''; }
+        else if (c === ',' || c === ';' || c === '\t') { row.push(current.trim()); current = ''; }
         else if (c === '\n') { row.push(current.trim()); rows.push(row); row = []; current = ''; }
-        else if (c === '\r') { /* skip */ }
         else { current += c; }
       }
     }
     if (current.length || row.length) { row.push(current.trim()); rows.push(row); }
 
-    if (!rows.length) return { headers: [], data: [] };
-    const headers = rows[0];
-    const data = rows.slice(1).filter(r => r.some(cell => cell !== '')).map(r => {
+    // FILTER: keep only rows with at least one non-empty cell
+    let cleanRows = rows.filter(r => r.some(cell => cell !== ''));
+
+    // NEW: Detect Excel-style "whole row in quotes" wrapping
+    // If most rows have exactly 1 cell and that cell contains commas, re-split
+    const looksWrapped = cleanRows.length > 1 &&
+      cleanRows.slice(0, 5).filter(r => r.length === 1 && r[0].includes(',')).length >= 3;
+
+    if (looksWrapped) {
+      console.log('[AVVA] Detected Excel-wrapped CSV — unwrapping');
+      cleanRows = cleanRows.map(r => {
+        // If the single cell is a comma-separated string, split it
+        if (r.length === 1 && r[0].includes(',')) {
+          return r[0].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        }
+        return r;
+      });
+    }
+
+    if (!cleanRows.length) return { headers: [], data: [] };
+
+    const headers = cleanRows[0].map(h => String(h).trim().replace(/^"|"$/g, ''));
+    const data = cleanRows.slice(1).map(r => {
       const obj = {};
-      headers.forEach((h, i) => { obj[h] = r[i] !== undefined ? r[i] : ''; });
+      headers.forEach((h, i) => {
+        const val = r[i] !== undefined ? String(r[i]).trim() : '';
+        obj[h] = val.replace(/^"|"$/g, '');
+      });
       return obj;
     });
     return { headers, data };
