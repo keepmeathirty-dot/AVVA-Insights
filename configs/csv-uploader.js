@@ -178,13 +178,22 @@
     return String(str).toLowerCase().trim().replace(/[_\-\s]+/g, ' ').replace(/\s+/g, ' ');
   }
 
-  function matchDistrictName(name) {
+    function matchDistrictName(name) {
     const key = normaliseKey(name);
+    // Prefer the SA lookup if available
+    if (window.AVVA_SA_LOOKUP) {
+      const lookup = window.AVVA_SA_LOOKUP;
+      const norm = lookup.normalise(name);
+      if (lookup.provinces.some(p => lookup.normalise(p) === norm)) {
+        return { match: name, level: 'province' };
+      }
+      const province = lookup.findProvinceForDistrict(name);
+      if (province) return { match: name, level: 'district' };
+    }
     if (KNOWN_DISTRICTS[key]) return { match: KNOWN_DISTRICTS[key], level: 'district' };
     if (KNOWN_PROVINCES[key]) return { match: KNOWN_PROVINCES[key], level: 'province' };
     return { match: name, level: 'unknown' };
   }
-
   /* ---------- 4. WORKSPACE CONFIG GENERATION ---------- */
   function generateWorkspaceConfig(parsed, options) {
     const { headers, data } = parsed;
