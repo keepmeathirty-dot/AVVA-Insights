@@ -379,8 +379,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
             </div>
             <div class="field">
               <label for="up-file">CSV file *</label>
-              <input id="up-file" type="file" accept=".csv,text/csv">
-              <div class="hint">Max 10MB. Use comma-separated values with headers in the first row.</div>
+              <input id="up-file" type="file" accept=".csv,.txt,.tsv,text/csv,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+              <div class="hint">Max 10MB. Accepted: .csv, .txt, .tsv. If using Excel, save as "CSV (Comma delimited)" first — File → Save As → CSV.</div>
             </div>
 
             <button class="btn-primary" id="up-parse" style="margin-top:8px">Parse CSV →</button>
