@@ -358,7 +358,64 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
         <div class="cards-grid" id="cards-grid"></div>
       </section>
 
-           <section class="view" data-view="chat">
+                 <section class="view" data-view="upload">
+        <div style="margin-bottom:14px">
+          <h1 style="font-size:22px;margin:0 0 4px">Upload Data</h1>
+          <p class="sub" style="font-size:12px">Upload a CSV file to generate a dashboard automatically</p>
+        </div>
+
+        <div class="card panel" style="padding:24px;max-width:720px">
+          <div id="upload-step-1">
+            <h3 style="font-size:15px;margin:0 0 6px">Step 1 — Describe your workspace</h3>
+            <p style="font-size:12px;color:#70809b;margin-bottom:18px">Give this dataset a name. This becomes the workspace label.</p>
+
+            <div class="field">
+              <label for="up-name">Workspace name *</label>
+              <input id="up-name" placeholder="e.g. North West Funded Businesses Q3">
+            </div>
+            <div class="field">
+              <label for="up-desc">Short description</label>
+              <input id="up-desc" placeholder="e.g. All businesses funded by the department in Q3 2026">
+            </div>
+            <div class="field">
+              <label for="up-file">CSV file *</label>
+              <input id="up-file" type="file" accept=".csv,text/csv">
+              <div class="hint">Max 10MB. Use comma-separated values with headers in the first row.</div>
+            </div>
+
+            <button class="btn-primary" id="up-parse" style="margin-top:8px">Parse CSV →</button>
+          </div>
+
+          <div id="upload-step-2" style="display:none">
+            <h3 style="font-size:15px;margin:0 0 6px">Step 2 — Review detected columns</h3>
+            <p style="font-size:12px;color:#70809b;margin-bottom:18px">AVVA detected the following structure. Verify before generating.</p>
+
+            <div style="background:#f8faff;border:1px solid #e9edf3;border-radius:9px;padding:14px;font-size:12px;margin-bottom:18px">
+              <div style="margin-bottom:8px"><b>Detected geography:</b> <span id="up-geo"></span></div>
+              <div style="margin-bottom:8px"><b>Detected metrics:</b> <span id="up-metrics"></span></div>
+              <div><b>Total rows:</b> <span id="up-rows"></span></div>
+            </div>
+
+            <div style="max-height:240px;overflow:auto;border:1px solid #e9edf3;border-radius:9px;margin-bottom:18px">
+              <table class="data-table" id="up-preview"></table>
+            </div>
+
+            <div style="display:flex;gap:10px">
+              <button class="btn-secondary" id="up-back">← Back</button>
+              <button class="btn-primary" id="up-generate">Generate Dashboard →</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view="uploads">
+        <div style="margin-bottom:14px">
+          <h1 style="font-size:22px;margin:0 0 4px">My Uploads</h1>
+          <p class="sub" style="font-size:12px">Workspaces generated from your uploaded CSVs</p>
+        </div>
+        <div class="cards-grid" id="uploads-grid"></div>
+      </section>
+<section class="view" data-view="chat">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
           <div><h1 style="font-size:22px;margin:0 0 4px">AI Assistant</h1><p class="sub" style="font-size:12px">Ask questions about your workspace data</p></div>
           <span class="pill pill-amber" id="ai-mode-pill">Demo mode</span>
@@ -426,6 +483,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <script src="configs/registry.js"></script>
 <script src="configs/accounts.js"></script>
 <script src="configs/ai.js"></script>
+<script src="configs/csv-uploader.js"></script>
 <script>
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -438,7 +496,15 @@ try { session = JSON.parse(sessionRaw); }
 catch (e) { window.location.href = 'login.html'; throw e; }
 
 /* ================= BUILD ACCESSIBLE WORKSPACE LIST ================= */
-const allWorkspaces = window.AVVA_WORKSPACES || [];
+const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
+  window.AVVA_CSV ? window.AVVA_CSV.list().map(u => ({
+    id: u.id,
+    label: u.workspaceName,
+    description: u.pageSubtitle || 'Uploaded dataset',
+    configPath: null,
+    _uploaded: true
+  })) : []
+);
 let registry;
 
 if (session.workspaces["*"]) {
@@ -480,6 +546,18 @@ function loadScript(src) {
 let CONFIG = null;
 
 (async function boot() {
+  // Check if this workspace is a locally-uploaded one (CSV)
+  const uploaded = window.AVVA_CSV ? window.AVVA_CSV.load(activeEntry.id) : null;
+
+  if (uploaded) {
+    CONFIG = uploaded;
+    console.log('[AVVA] Loaded uploaded workspace:', CONFIG.id);
+    localStorage.setItem('avva_last_workspace', CONFIG.id);
+    renderAll(CONFIG);
+    return;
+  }
+
+  // Otherwise, load from a config file on the server
   try { await loadScript(activeEntry.configPath); }
   catch (err) {
     document.body.innerHTML = `<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ${activeEntry.configPath}</div>`;
@@ -718,6 +796,23 @@ function renderSidebar(C) {
     });
   });
 
+    // ---- Always inject "Upload Data" and "My Uploads" at the top ----
+  const uploadItems = [
+    { id: 'upload-data', label: 'Upload Data', icon: '⤒', view: 'upload' },
+    { id: 'my-uploads', label: 'My Uploads', icon: '▤', view: 'uploads' }
+  ];
+  uploadItems.forEach(item => {
+    const btn = document.createElement('button');
+    btn.dataset.id = item.id;
+    btn.dataset.label = item.label;
+    btn.innerHTML = `<span class="ico">${item.icon}</span>${item.label}`;
+    btn.addEventListener('click', () => activateView(C, item, btn));
+    nav.insertBefore(btn, nav.firstChild);
+    if (item.id === 'upload-data') {
+      // no auto-activation — Command Centre stays default
+    }
+  });
+
   if (firstBtn) firstBtn.classList.add('active');
 }
 
@@ -745,9 +840,15 @@ function activateView(C, item, btn) {
   } else if (view === 'cards') {
     document.querySelector('[data-view="cards"]').classList.add('active');
     renderCards(C, item);
-    } else if (view === 'chat') {
+      } else if (view === 'chat') {
     document.querySelector('[data-view="chat"]').classList.add('active');
     renderChatView(C);
+  } else if (view === 'upload') {
+    document.querySelector('[data-view="upload"]').classList.add('active');
+    renderUploadView(C);
+  } else if (view === 'uploads') {
+    document.querySelector('[data-view="uploads"]').classList.add('active');
+    renderUploadsView(C);
   } else if (view === 'form') {
     document.querySelector('[data-view="post-programme"]').classList.add('active');
     if (item.action === 'open-programme-form') openPostPanel();
@@ -1404,6 +1505,138 @@ function renderCards(C, item) {
   };
 }
 
+/* ================= CSV UPLOAD VIEWS ================= */
+let __parsedCSV = null;
+let __pendingConfig = null;
+
+function renderUploadView(C) {
+  const step1 = document.getElementById('upload-step-1');
+  const step2 = document.getElementById('upload-step-2');
+  step1.style.display = 'block';
+  step2.style.display = 'none';
+  document.getElementById('up-name').value = '';
+  document.getElementById('up-desc').value = '';
+  document.getElementById('up-file').value = '';
+
+  document.getElementById('up-parse').onclick = () => handleCSVParse();
+  document.getElementById('up-back').onclick = () => {
+    step1.style.display = 'block';
+    step2.style.display = 'none';
+  };
+  document.getElementById('up-generate').onclick = () => handleGenerate(C);
+}
+
+function handleCSVParse() {
+  const name = document.getElementById('up-name').value.trim();
+  const desc = document.getElementById('up-desc').value.trim();
+  const fileInput = document.getElementById('up-file');
+  const file = fileInput.files[0];
+
+  if (!name) { toast('Workspace name is required'); return; }
+  if (!file) { toast('Please choose a CSV file'); return; }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = window.AVVA_CSV.parse(e.target.result);
+      if (!parsed.data.length) { toast('CSV has no data rows'); return; }
+
+      __parsedCSV = parsed;
+
+      // Detect columns
+      const detection = window.AVVA_CSV.detectColumns(parsed.headers, parsed.data);
+      const geoCol = parsed.headers.find(h => detection[h].role === 'district' || detection[h].role === 'province');
+      const metricCols = parsed.headers.filter(h => detection[h].type === 'number' && h !== geoCol);
+
+      // Preview info
+      document.getElementById('up-geo').textContent = geoCol || '(not detected — will use first text column)';
+      document.getElementById('up-metrics').textContent = metricCols.length ? metricCols.join(', ') : '(none detected)';
+      document.getElementById('up-rows').textContent = parsed.data.length.toLocaleString('en-ZA');
+
+      // Render preview table (first 8 rows)
+      const previewRows = parsed.data.slice(0, 8);
+      const previewHtml = `
+        <thead><tr>${parsed.headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>${previewRows.map(r =>
+          `<tr>${parsed.headers.map(h => `<td>${r[h] || ''}</td>`).join('')}</tr>`
+        ).join('')}</tbody>
+      `;
+      document.getElementById('up-preview').innerHTML = previewHtml;
+
+      // Build config in the background
+      __pendingConfig = window.AVVA_CSV.generateConfig(parsed, {
+        workspaceId: 'uploaded-' + Date.now(),
+        workspaceName: name,
+        description: desc
+      });
+
+      // Show step 2
+      document.getElementById('upload-step-1').style.display = 'none';
+      document.getElementById('upload-step-2').style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      toast('CSV parse error: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function handleGenerate(C) {
+  if (!__pendingConfig) { toast('No parsed data'); return; }
+
+  const saved = window.AVVA_CSV.save(__pendingConfig);
+  if (!saved) { toast('Could not save workspace'); return; }
+
+  toast('✓ Workspace generated');
+  setTimeout(() => {
+    window.location.href = `dashboard.html?workspace=${__pendingConfig.id}`;
+  }, 600);
+}
+
+function renderUploadsView(C) {
+  const grid = document.getElementById('uploads-grid');
+  const uploads = window.AVVA_CSV.list();
+
+  if (!uploads.length) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1">
+        <div style="font-size:44px;margin-bottom:12px">⤒</div>
+        <h2 style="font-size:18px;margin:0 0 6px;color:#1f2d4d">No uploads yet</h2>
+        <p style="margin:0 0 20px">Upload your first CSV to generate a dashboard automatically.</p>
+        <button class="btn-primary" onclick="document.querySelector('[data-id=\\'upload-data\\']').click()">Upload Data →</button>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = uploads.map(u => `
+    <div class="card-item" data-upload-id="${u.id}">
+      <button class="card-delete" data-upload-id="${u.id}" title="Delete">✕</button>
+      <h4>${u.workspaceName}</h4>
+      <p>${u.pageSubtitle || 'Generated from uploaded CSV'}</p>
+      <div class="meta"><span>${Object.keys(u.districts || {}).length} districts</span><span>OPEN →</span></div>
+    </div>
+  `).join('');
+
+  grid.querySelectorAll('.card-item').forEach(card => {
+    card.addEventListener('click', (e) => {
+      if (e.target.classList.contains('card-delete')) return;
+      const id = card.dataset.uploadId;
+      window.location.href = `dashboard.html?workspace=${id}`;
+    });
+  });
+
+  grid.querySelectorAll('.card-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.uploadId;
+      if (!confirm('Delete this uploaded workspace?')) return;
+      window.AVVA_CSV.remove(id);
+      toast('Workspace deleted');
+      renderUploadsView(C);
+    });
+  });
+}
 /* ================= AI ASSISTANT CHAT ================= */
 let chatHistory = [];
 
