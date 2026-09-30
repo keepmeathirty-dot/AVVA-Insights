@@ -356,6 +356,11 @@
         ]
       },
       navigation: buildNavigation(geoLevel),
+programmes: {
+  title: 'Programmes in Data',
+  subtitle: 'Detected from upload',
+  items: sectors.map(s => [s, '—', 0])
+},
       districts: aggregated,
       provinces: geoLevel === 'province' ? aggregated : undefined,
       primaryMetric: primaryKey,
@@ -373,12 +378,14 @@
     return String(key).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   }
 
-  function buildNavigation(geoLevel) {
+    function buildNavigation(geoLevel) {
     return [
       { section: '', items: [
         { id: 'command', label: 'Command Centre', icon: '⌂', view: 'map' },
         { id: 'geo', label: geoLevel === 'province' ? 'Province Analysis' : 'District Analysis', icon: '◇', view: 'table', table: { source: geoLevel === 'province' ? 'provinces' : 'districts' } },
         { id: 'records', label: 'All Records', icon: '▦', view: 'table', table: { source: 'districts' } },
+        { id: 'post-programme', label: 'Post a Programme', icon: '＋', view: 'form', action: 'open-programme-form' },
+        { id: 'programmes', label: 'Active Programmes', icon: '▤', view: 'cards', cards: { type: 'programmes' } },
         { id: 'reports', label: 'Reports', icon: '▤', view: 'cards', cards: { type: 'reports' } },
         { id: 'ai', label: 'AI Assistant', icon: '✧', view: 'chat' }
       ]},
