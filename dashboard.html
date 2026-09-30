@@ -484,6 +484,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <script src="configs/accounts.js"></script>
 <script src="configs/ai.js"></script>
 <script src="configs/csv-uploader.js"></script>
+<script src="configs/sa-lookup.js"></script>
+<script src="configs/geo-resolver.js"></script>
 <script>
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
@@ -978,35 +980,81 @@ function renderCommandCentre(C) {
   let currentLayer = null;
   let currentData = null;
 
-  function buildLayer(dataObj, metricKey) {
+    function buildLayer(dataObj, metricKey) {
     const nms = Object.keys(dataObj);
-    const values = nms.map(n => dataObj[n][metricKey] || 0);
-    const min = Math.min(...values); const max = Math.max(...values);
+    if (!nms.length) return;
 
-    loadGeoBoundaries().then(geoLookup => {
-      const features = buildFeatures(dataObj, geoLookup);
+    const values = nms.map(n => dataObj[n][metricKey] || 0);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    // Detect which admin level this data is at
+    const level = (window.AVVA_SA_LOOKUP ? window.AVVA_SA_LOOKUP.detectLevel(nms) : 'district');
+    console.log('[AVVA] Map rendering at level:', level, '— districts:', nms.length);
+
+    window.AVVA_GEO.load(level).then(() => {
+      const features = [];
+      const leftovers = [];
+
+      nms.forEach(name => {
+        const d = dataObj[name];
+        const props = { name, ...d };
+        const match = window.AVVA_GEO.findMatch(level, name);
+        if (match) {
+          features.push({ type: 'Feature', properties: props, geometry: match.geometry });
+        } else {
+          leftovers.push({ name, props, value: d[metricKey] || 0 });
+        }
+      });
 
       if (currentLayer) map.removeLayer(currentLayer);
-      currentLayer = L.geoJSON({ type: "FeatureCollection", features }, {
-        style: f => ({
-          fillColor: getColour(f.properties[metricKey] || 0, min, max),
-          weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78
-        }),
-        onEachFeature: (f, layer) => {
-          const p = f.properties; const val = p[metricKey] || 0;
-          const valDisplay = (metricKey === 'revenue' || metricKey === 'funding')
-            ? fmtCurrencyM(val) : fmtNumber(val);
-          layer.bindTooltip(
-            `<strong>${p.name}</strong><br>${valDisplay} ${C.primaryMetricLabel.toLowerCase()}`,
-            { sticky: true }
-          );
-          layer.on({
-            mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
-            mouseout: e => currentLayer.resetStyle(e.target),
-            click: () => showDetail(p)
-          });
-        }
-      }).addTo(map);
+
+      // Draw matched boundaries
+      if (features.length) {
+        currentLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
+          style: f => ({
+            fillColor: getColour(f.properties[metricKey] || 0, min, max),
+            weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78
+          }),
+          onEachFeature: (f, layer) => {
+            const p = f.properties;
+            const val = p[metricKey] || 0;
+            const valDisplay = (metricKey === 'revenue' || metricKey === 'funding')
+              ? fmtCurrencyM(val) : fmtNumber(val);
+            layer.bindTooltip(`<strong>${p.name}</strong><br>${valDisplay} ${C.primaryMetricLabel.toLowerCase()}`, { sticky: true });
+            layer.on({
+              mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
+              mouseout: e => currentLayer.resetStyle(e.target),
+              click: () => showDetail(p)
+            });
+          }
+        }).addTo(map);
+      } else {
+        currentLayer = L.layerGroup().addTo(map);
+      }
+
+      // Draw bubbles for unmatched (custom names, sub-districts, etc.)
+      leftovers.forEach((lo, i) => {
+        const cols = Math.ceil(Math.sqrt(leftovers.length));
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        const lat = -28.0 + (row * 0.8);
+        const lng = 25.0 + (col * 0.8);
+        const radius = 8 + Math.min(1, lo.value / (Math.max(...leftovers.map(l => l.value), 1))) * 32;
+        const colour = getColour(lo.value, min, max);
+        const circle = L.circleMarker([lat, lng], {
+          radius, fillColor: colour, fillOpacity: 0.75, color: '#fff', weight: 1.5
+        }).addTo(map);
+        circle.bindTooltip(`<strong>${lo.name}</strong><br>${lo.value.toLocaleString('en-ZA')} ${C.primaryMetricLabel.toLowerCase()}`, { sticky: true });
+        circle.on('click', () => showDetail(lo.props));
+        currentLayer.addLayer(circle);
+      });
+
+      // Fit map to matched features
+      if (features.length && currentLayer.getBounds) {
+        try { map.fitBounds(currentLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
+      }
+
       currentData = dataObj;
     });
   }
@@ -1126,39 +1174,76 @@ function renderFullMap(C, item) {
     return `rgb(${lerp(r1,r2,local)},${lerp(g1,g2,local)},${lerp(b1,b2,local)})`;
   }
 
-  function drawLayer(dataObj, metricKey) {
+    function drawLayer(dataObj, metricKey) {
     const nms = Object.keys(dataObj);
-    const values = nms.map(n => dataObj[n][metricKey] || 0);
-    const min = Math.min(...values); const max = Math.max(...values);
+    if (!nms.length) return;
 
-    loadGeoBoundaries().then(geoLookup => {
-      const features = buildFeatures(dataObj, geoLookup);
+    const values = nms.map(n => dataObj[n][metricKey] || 0);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    const level = (window.AVVA_SA_LOOKUP ? window.AVVA_SA_LOOKUP.detectLevel(nms) : 'district');
+
+    window.AVVA_GEO.load(level).then(() => {
+      const features = [];
+      const leftovers = [];
+
+      nms.forEach(name => {
+        const d = dataObj[name];
+        const props = { name, ...d };
+        const match = window.AVVA_GEO.findMatch(level, name);
+        if (match) {
+          features.push({ type: 'Feature', properties: props, geometry: match.geometry });
+        } else {
+          leftovers.push({ name, props, value: d[metricKey] || 0 });
+        }
+      });
 
       if (fullMapLayer) fullMapInstance.removeLayer(fullMapLayer);
-      fullMapLayer = L.geoJSON({ type: "FeatureCollection", features }, {
-        style: f => ({
-          fillColor: getColour(f.properties[metricKey] || 0, min, max),
-          weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78
-        }),
-        onEachFeature: (f, layer) => {
-          const p = f.properties;
-          const val = p[metricKey] || 0;
-          const display = (metricKey === 'revenue' || metricKey === 'funding')
-            ? 'R' + (val/1_000_000).toFixed(1) + 'm'
-            : val.toLocaleString('en-ZA');
-          layer.bindTooltip(
-            `<strong>${p.name}</strong><br>${display} ${C.primaryMetricLabel.toLowerCase()}`,
-            { sticky: true }
-          );
-          layer.on({
-            mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
-            mouseout: e => fullMapLayer.resetStyle(e.target)
-          });
-        }
-      }).addTo(fullMapInstance);
+
+      if (features.length) {
+        fullMapLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
+          style: f => ({
+            fillColor: getColour(f.properties[metricKey] || 0, min, max),
+            weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78
+          }),
+          onEachFeature: (f, layer) => {
+            const p = f.properties;
+            const val = p[metricKey] || 0;
+            const display = (metricKey === 'revenue' || metricKey === 'funding')
+              ? 'R' + (val/1_000_000).toFixed(1) + 'm'
+              : val.toLocaleString('en-ZA');
+            layer.bindTooltip(`<strong>${p.name}</strong><br>${display} ${C.primaryMetricLabel.toLowerCase()}`, { sticky: true });
+            layer.on({
+              mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
+              mouseout: e => fullMapLayer.resetStyle(e.target)
+            });
+          }
+        }).addTo(fullMapInstance);
+      } else {
+        fullMapLayer = L.layerGroup().addTo(fullMapInstance);
+      }
+
+      leftovers.forEach((lo, i) => {
+        const cols = Math.ceil(Math.sqrt(leftovers.length));
+        const row = Math.floor(i / cols);
+        const col = i % cols;
+        const lat = -28.0 + (row * 0.8);
+        const lng = 25.0 + (col * 0.8);
+        const radius = 8 + Math.min(1, lo.value / (Math.max(...leftovers.map(l => l.value), 1))) * 32;
+        const colour = getColour(lo.value, min, max);
+        const circle = L.circleMarker([lat, lng], {
+          radius, fillColor: colour, fillOpacity: 0.75, color: '#fff', weight: 1.5
+        }).addTo(fullMapInstance);
+        circle.bindTooltip(`<strong>${lo.name}</strong><br>${lo.value.toLocaleString('en-ZA')} ${C.primaryMetricLabel.toLowerCase()}`, { sticky: true });
+        fullMapLayer.addLayer(circle);
+      });
+
+      if (features.length && fullMapLayer.getBounds) {
+        try { fullMapInstance.fitBounds(fullMapLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
+      }
     });
   }
-
   drawLayer(C.districts, C.primaryMetric);
 
   const gt = $('#mapfull-geo-toggle');
