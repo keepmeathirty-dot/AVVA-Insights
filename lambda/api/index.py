@@ -1,22 +1,5 @@
 """
-AVVA Insights — Backend API
-============================
-This is a single Lambda function that serves all AVVA API endpoints.
-
-Route dispatch happens inside lambda_handler, based on the request path
-and method. Data lives in 4 DynamoDB tables:
-- avva-users-{env}:       user accounts
-- avva-workspaces-{env}:  saved workspaces (from CSV uploads)
-- avva-programmes-{env}:  posted programmes
-- avva-audit-{env}:       audit log (auto-deleted after 90 days)
-
-Environment variables (set by CloudFormation):
-- USERS_TABLE, WORKSPACES_TABLE, PROGRAMMES_TABLE, AUDIT_TABLE
-- JWT_SECRET: secret key for signing login tokens
-- AI_PROVIDER, AI_API_KEY, AI_MODEL: AI proxy config
-- ALLOWED_ORIGINS: comma-separated list of allowed frontend origins
-
-To deploy: see cloudformation/avva-backend.yaml
+AVVA Insights — Backend API (complete)
 """
 
 import json
@@ -30,33 +13,27 @@ import urllib.error
 import jwt
 import boto3
 
-# ---------- AWS CLIENTS ----------
 dynamodb = boto3.resource('dynamodb')
 users_table = dynamodb.Table(os.environ['USERS_TABLE'])
 workspaces_table = dynamodb.Table(os.environ['WORKSPACES_TABLE'])
 programmes_table = dynamodb.Table(os.environ['PROGRAMMES_TABLE'])
 audit_table = dynamodb.Table(os.environ['AUDIT_TABLE'])
 
-JWT_SECRET = os.environ.get('JWT_SECRET', 'change-me-in-production')
+JWT_SECRET = os.environ.get('JWT_SECRET', 'change-me')
 JWT_ALGO = 'HS256'
 JWT_EXPIRY_HOURS = 24
 
 
-# ================================================================
-# MAIN ENTRY POINT
-# ================================================================
 def lambda_handler(event, context):
-    """AWS calls this for every request. We route by path + method."""
     try:
-        # CORS preflight
         method = event.get('requestContext', {}).get('http', {}).get('method', 'GET')
         if method == 'OPTIONS':
             return cors_response(200, {'message': 'CORS OK'})
 
-        # Extract path, method, body
         path = event.get('rawPath', '/')
         if path.startswith('/prod'):
-            path = path[5:]  # strip stage prefix if present
+            path = path[5:]
+
         body = {}
         if event.get('body'):
             try:
@@ -67,96 +44,76 @@ def lambda_handler(event, context):
         headers = event.get('headers', {})
         auth_header = headers.get('authorization') or headers.get('Authorization') or ''
 
-        # ---- ROUTING TABLE ----
-        # Each route = (method, path) → handler function
-
         routes = {
-            ('POST', '/auth/signup'):    lambda: handle_signup(body),
-            ('POST', '/auth/login'):     lambda: handle_login(body),
-            ('GET',  '/auth/me'):        lambda: handle_me(auth_header),
+            ('POST', '/auth/signup'): lambda: handle_signup(body),
+            ('POST', '/auth/login'): lambda: handle_login(body),
+            ('GET', '/auth/me'): lambda: handle_me(auth_header),
 
-            ('GET',  '/workspaces'):     lambda: handle_list_workspaces(auth_header),
-            ('POST', '/workspaces'):     lambda: handle_create_workspace(auth_header, body),
-            ('GET',  '/workspaces/get'): lambda: handle_get_workspace(auth_header, event),
-            ('DELETE','/workspaces'):    lambda: handle_delete_workspace(auth_header, body),
+            ('GET', '/workspaces'): lambda: handle_list_workspaces(auth_header),
+            ('POST', '/workspaces'): lambda: handle_create_workspace(auth_header, body),
+            ('DELETE', '/workspaces'): lambda: handle_delete_workspace(auth_header, body),
 
-            ('GET',  '/programmes'):     lambda: handle_list_programmes(auth_header, event),
-            ('POST', '/programmes'):     lambda: handle_create_programme(auth_header, body),
-            ('DELETE','/programmes'):    lambda: handle_delete_programme(auth_header, body),
+            ('GET', '/programmes'): lambda: handle_list_programmes(auth_header, event),
+            ('POST', '/programmes'): lambda: handle_create_programme(auth_header, body),
+            ('DELETE', '/programmes'): lambda: handle_delete_programme(auth_header, body),
 
-            ('POST', '/ai/chat'):        lambda: handle_ai_chat(auth_header, body),
+            ('POST', '/ai/chat'): lambda: handle_ai_chat(auth_header, body),
 
-            ('GET',  '/audit'):          lambda: handle_audit_list(auth_header, event),
-            ('GET',  '/health'):         lambda: cors_response(200, {'status': 'ok', 'time': int(time.time())})
+            ('POST', '/admin/set-workspaces'): lambda: handle_set_workspaces(auth_header, body),
+            ('POST', '/admin/create-user'): lambda: handle_admin_create_user(auth_header, body),
+            ('GET', '/admin/users'): lambda: handle_admin_list_users(auth_header),
+
+            ('GET', '/audit'): lambda: handle_audit_list(auth_header, event),
+            ('GET', '/health'): lambda: cors_response(200, {'status': 'ok', 'time': int(time.time())}),
         }
 
         handler = routes.get((method, path))
         if not handler:
             return cors_response(404, {'error': f'No route for {method} {path}'})
-
         return handler()
 
     except Exception as e:
-        # Log the error so we can debug from CloudWatch
         print(f'[ERROR] {type(e).__name__}: {str(e)}')
         import traceback
         traceback.print_exc()
         return cors_response(500, {'error': 'Internal server error', 'detail': str(e)})
 
 
-# ================================================================
-# AUTH HANDLERS
-# ================================================================
+# ---------- AUTH ----------
 
 def handle_signup(body):
-    """Create a new user account."""
     email = (body.get('email') or '').strip().lower()
     password = body.get('password') or ''
     name = (body.get('name') or '').strip()
     role = body.get('role') or 'Viewer'
+    workspaces = body.get('workspaces') or {}
 
     if not email or not password or not name:
         return cors_response(400, {'error': 'Email, password, and name are required'})
-    if len(password) < 8:
-        return cors_response(400, {'error': 'Password must be at least 8 characters'})
+    if len(password) < 6:
+        return cors_response(400, {'error': 'Password must be at least 6 characters'})
 
-    # Check if user already exists
     existing = users_table.get_item(Key={'email': email})
     if 'Item' in existing:
         return cors_response(409, {'error': 'An account with this email already exists'})
 
-    # Hash the password (SHA-256 + salt for demo; use bcrypt in production)
-    password_hash = hash_password(password)
-
-    # Default workspaces: empty (admin assigns later)
     user = {
         'email': email,
         'name': name,
         'role': role,
-        'passwordHash': password_hash,
-        'workspaces': {},   # { workspaceId: role }
+        'passwordHash': hash_password(password),
+        'workspaces': workspaces,
         'createdAt': int(time.time()),
         'active': True
     }
-
     users_table.put_item(Item=user)
-    log_audit('signup', email, {'email': email, 'name': name})
+    log_audit('signup', email, {'email': email})
 
-    # Issue JWT
-    token = create_jwt(email, name, role, {})
-    return cors_response(200, {
-        'token': token,
-        'user': {
-            'email': email,
-            'name': name,
-            'role': role,
-            'workspaces': {}
-        }
-    })
+    token = create_jwt(email, name, role, workspaces)
+    return cors_response(200, {'token': token, 'user': public_user(user)})
 
 
 def handle_login(body):
-    """Authenticate a user and return a JWT."""
     email = (body.get('email') or '').strip().lower()
     password = body.get('password') or ''
 
@@ -170,45 +127,31 @@ def handle_login(body):
     user = result['Item']
     if not user.get('active', True):
         return cors_response(401, {'error': 'Account is disabled'})
-
     if not verify_password(password, user['passwordHash']):
         return cors_response(401, {'error': 'Invalid email or password'})
 
-    token = create_jwt(email, user['name'], user['role'], user.get('workspaces', {}))
+    workspaces = user.get('workspaces', {}) or {}
+    token = create_jwt(email, user['name'], user['role'], workspaces)
     log_audit('login', email, {'email': email})
-
-    return cors_response(200, {
-        'token': token,
-        'user': {
-            'email': user['email'],
-            'name': user['name'],
-            'role': user['role'],
-            'workspaces': user.get('workspaces', {})
-        }
-    })
+    return cors_response(200, {'token': token, 'user': public_user(user)})
 
 
 def handle_me(auth_header):
-    """Return the current user's profile."""
-    payload = decode_jwt(auth_header)
-    if not payload:
+    user = decode_jwt(auth_header)
+    if not user:
         return cors_response(401, {'error': 'Not authenticated'})
-    return cors_response(200, {'user': payload})
+    return cors_response(200, {'user': user})
 
 
-# ================================================================
-# WORKSPACE HANDLERS
-# ================================================================
+# ---------- WORKSPACES ----------
 
 def handle_list_workspaces(auth_header):
-    """Return all workspaces the current user can access."""
     user = decode_jwt(auth_header)
     if not user:
         return cors_response(401, {'error': 'Not authenticated'})
 
-    # Admin sees everything; others see only their assigned workspaces
     workspaces = []
-    if user.get('role') == 'Platform Admin' or user['workspaces'].get('*'):
+    if user['workspaces'].get('*'):
         scan = workspaces_table.scan()
         workspaces = scan.get('Items', [])
     else:
@@ -221,7 +164,6 @@ def handle_list_workspaces(auth_header):
 
 
 def handle_create_workspace(auth_header, body):
-    """Create a new workspace (from CSV upload, typically)."""
     user = decode_jwt(auth_header)
     if not user:
         return cors_response(401, {'error': 'Not authenticated'})
@@ -237,76 +179,39 @@ def handle_create_workspace(auth_header, body):
         'metrics': body.get('metrics', []),
         'source': body.get('source', 'csv-upload')
     }
-
     workspaces_table.put_item(Item=workspace)
     log_audit('workspace.create', user['email'], {'workspaceId': workspace['id']})
-
     return cors_response(200, {'workspace': workspace})
 
 
-def handle_get_workspace(auth_header, event):
-    """Fetch a single workspace by ID."""
-    user = decode_jwt(auth_header)
-    if not user:
-        return cors_response(401, {'error': 'Not authenticated'})
-
-    params = event.get('queryStringParameters') or {}
-    ws_id = params.get('id')
-    if not ws_id:
-        return cors_response(400, {'error': 'Workspace ID required'})
-
-    result = workspaces_table.get_item(Key={'id': ws_id})
-    if 'Item' not in result:
-        return cors_response(404, {'error': 'Workspace not found'})
-
-    ws = result['Item']
-
-    # Permission check
-    if user.get('role') != 'Platform Admin' and ws['ownerEmail'] != user['email'] and not user['workspaces'].get('*'):
-        if ws_id not in user['workspaces']:
-            return cors_response(403, {'error': 'Access denied'})
-
-    return cors_response(200, {'workspace': ws})
-
-
 def handle_delete_workspace(auth_header, body):
-    """Delete a workspace. Only owner or admin."""
     user = decode_jwt(auth_header)
     if not user:
         return cors_response(401, {'error': 'Not authenticated'})
-
     ws_id = body.get('id')
     if not ws_id:
-        return cors_response(400, {'error': 'Workspace ID required'})
-
+        return cors_response(400, {'error': 'id required'})
     result = workspaces_table.get_item(Key={'id': ws_id})
     if 'Item' not in result:
-        return cors_response(404, {'error': 'Workspace not found'})
-
+        return cors_response(404, {'error': 'Not found'})
     ws = result['Item']
-    if user.get('role') != 'Platform Admin' and ws['ownerEmail'] != user['email']:
-        return cors_response(403, {'error': 'Only the owner can delete this workspace'})
-
+    if not user['workspaces'].get('*') and ws['ownerEmail'] != user['email']:
+        return cors_response(403, {'error': 'Not authorized'})
     workspaces_table.delete_item(Key={'id': ws_id})
     log_audit('workspace.delete', user['email'], {'workspaceId': ws_id})
     return cors_response(200, {'deleted': True})
 
 
-# ================================================================
-# PROGRAMME HANDLERS
-# ================================================================
+# ---------- PROGRAMMES ----------
 
 def handle_list_programmes(auth_header, event):
-    """List programmes for a workspace."""
     user = decode_jwt(auth_header)
     if not user:
         return cors_response(401, {'error': 'Not authenticated'})
-
     params = event.get('queryStringParameters') or {}
     ws_id = params.get('workspaceId')
     if not ws_id:
         return cors_response(400, {'error': 'workspaceId required'})
-
     result = programmes_table.query(
         KeyConditionExpression='workspaceId = :w',
         ExpressionAttributeValues={':w': ws_id}
@@ -315,19 +220,16 @@ def handle_list_programmes(auth_header, event):
 
 
 def handle_create_programme(auth_header, body):
-    """Create a new programme."""
     user = decode_jwt(auth_header)
     if not user:
         return cors_response(401, {'error': 'Not authenticated'})
-
     ws_id = body.get('workspaceId')
     if not ws_id:
         return cors_response(400, {'error': 'workspaceId required'})
-
     programme = {
         'workspaceId': ws_id,
         'id': body.get('id') or f'prog-{uuid.uuid4().hex[:12]}',
-        'name': body.get('name', 'Untitled programme'),
+        'name': body.get('name', 'Untitled'),
         'sector': body.get('sector', ''),
         'type': body.get('type', ''),
         'budget': body.get('budget', ''),
@@ -342,34 +244,103 @@ def handle_create_programme(auth_header, body):
         'postedBy': user['email'],
         'postedAt': int(time.time())
     }
-
     programmes_table.put_item(Item=programme)
     log_audit('programme.create', user['email'], {'programmeId': programme['id']})
     return cors_response(200, {'programme': programme})
 
 
 def handle_delete_programme(auth_header, body):
-    """Delete a programme."""
     user = decode_jwt(auth_header)
     if not user:
         return cors_response(401, {'error': 'Not authenticated'})
-
     ws_id = body.get('workspaceId')
     prog_id = body.get('id')
     if not ws_id or not prog_id:
         return cors_response(400, {'error': 'workspaceId and id required'})
-
     programmes_table.delete_item(Key={'workspaceId': ws_id, 'id': prog_id})
     log_audit('programme.delete', user['email'], {'programmeId': prog_id})
     return cors_response(200, {'deleted': True})
 
 
-# ================================================================
-# AI CHAT PROXY
-# ================================================================
+# ---------- ADMIN ----------
+
+def handle_set_workspaces(auth_header, body):
+    user = decode_jwt(auth_header)
+    if not user:
+        return cors_response(401, {'error': 'Not authenticated'})
+    if user.get('role') != 'Platform Admin':
+        return cors_response(403, {'error': 'Admin only'})
+    target = (body.get('email') or '').strip().lower()
+    workspaces = body.get('workspaces') or {}
+    if not target:
+        return cors_response(400, {'error': 'email required'})
+    try:
+        users_table.update_item(
+            Key={'email': target},
+            UpdateExpression='SET workspaces = :w',
+            ExpressionAttributeValues={':w': workspaces}
+        )
+        log_audit('admin.set-workspaces', user['email'], {'target': target, 'workspaces': workspaces})
+        return cors_response(200, {'updated': True, 'email': target, 'workspaces': workspaces})
+    except Exception as e:
+        return cors_response(500, {'error': str(e)})
+
+
+def handle_admin_create_user(auth_header, body):
+    """Admin endpoint: create a user with workspaces pre-assigned."""
+    user = decode_jwt(auth_header)
+    if not user:
+        return cors_response(401, {'error': 'Not authenticated'})
+    if user.get('role') != 'Platform Admin':
+        return cors_response(403, {'error': 'Admin only'})
+
+    email = (body.get('email') or '').strip().lower()
+    password = body.get('password') or ''
+    name = body.get('name') or email
+    role = body.get('role') or 'Manager'
+    workspaces = body.get('workspaces') or {}
+
+    if not email or not password:
+        return cors_response(400, {'error': 'email and password required'})
+
+    existing = users_table.get_item(Key={'email': email})
+    if 'Item' in existing:
+        users_table.update_item(
+            Key={'email': email},
+            UpdateExpression='SET workspaces = :w, #n = :n, #r = :r',
+            ExpressionAttributeNames={'#n': 'name', '#r': 'role'},
+            ExpressionAttributeValues={':w': workspaces, ':n': name, ':r': role}
+        )
+        return cors_response(200, {'created': False, 'updated': True, 'email': email})
+
+    new_user = {
+        'email': email,
+        'name': name,
+        'role': role,
+        'passwordHash': hash_password(password),
+        'workspaces': workspaces,
+        'createdAt': int(time.time()),
+        'active': True
+    }
+    users_table.put_item(Item=new_user)
+    log_audit('admin.create-user', user['email'], {'target': email})
+    return cors_response(200, {'created': True, 'user': public_user(new_user)})
+
+
+def handle_admin_list_users(auth_header):
+    user = decode_jwt(auth_header)
+    if not user:
+        return cors_response(401, {'error': 'Not authenticated'})
+    if user.get('role') != 'Platform Admin':
+        return cors_response(403, {'error': 'Admin only'})
+    scan = users_table.scan()
+    items = [public_user(u) for u in scan.get('Items', [])]
+    return cors_response(200, {'users': items})
+
+
+# ---------- AI ----------
 
 def handle_ai_chat(auth_header, body):
-    """Proxy chat requests to the AI provider. Keeps API key server-side."""
     user = decode_jwt(auth_header)
     if not user:
         return cors_response(401, {'error': 'Not authenticated'})
@@ -380,16 +351,14 @@ def handle_ai_chat(auth_header, body):
 
     if not api_key:
         return cors_response(503, {
-            'error': 'AI is not configured. Set AI_API_KEY in Lambda environment variables.',
-            'demo': True,
-            'reply': 'AI is not yet configured on this workspace. Please contact your administrator.'
+            'error': 'AI not configured',
+            'reply': 'AI is not yet configured. Please contact your administrator.'
         })
 
     messages = body.get('messages', [])
     workspace_context = body.get('context', '')
-    system_prompt = body.get('systemPrompt', 'You are a helpful assistant for AVVA Insights.')
+    system_prompt = body.get('systemPrompt', 'You are AVVA Assistant.')
 
-    # Build full message list with system prompt + workspace context
     full_messages = [{'role': 'system', 'content': system_prompt + ('\n\n' + workspace_context if workspace_context else '')}]
     full_messages.extend(messages)
 
@@ -401,7 +370,7 @@ def handle_ai_chat(auth_header, body):
     elif provider == 'gemini':
         return proxy_gemini(api_key, model, full_messages)
     else:
-        return cors_response(400, {'error': f'Unknown AI provider: {provider}'})
+        return cors_response(400, {'error': f'Unknown provider {provider}'})
 
 
 def proxy_openai(base_url, api_key, model, messages):
@@ -442,9 +411,7 @@ def proxy_gemini(api_key, model, messages):
         return cors_response(500, {'error': str(e)})
 
 
-# ================================================================
-# AUDIT LOG
-# ================================================================
+# ---------- AUDIT ----------
 
 def handle_audit_list(auth_header, event):
     user = decode_jwt(auth_header)
@@ -452,7 +419,6 @@ def handle_audit_list(auth_header, event):
         return cors_response(401, {'error': 'Not authenticated'})
     if user.get('role') != 'Platform Admin':
         return cors_response(403, {'error': 'Admin only'})
-
     params = event.get('queryStringParameters') or {}
     limit = int(params.get('limit', 50))
     result = audit_table.scan(Limit=limit)
@@ -460,7 +426,6 @@ def handle_audit_list(auth_header, event):
 
 
 def log_audit(action, actor_email, metadata=None):
-    """Write an audit entry. Auto-deleted after 90 days via TTL."""
     try:
         now = int(time.time())
         audit_table.put_item(Item={
@@ -474,9 +439,7 @@ def log_audit(action, actor_email, metadata=None):
         print(f'[AUDIT ERROR] {e}')
 
 
-# ================================================================
-# JWT HELPERS
-# ================================================================
+# ---------- HELPERS ----------
 
 def create_jwt(email, name, role, workspaces):
     payload = {
@@ -491,7 +454,6 @@ def create_jwt(email, name, role, workspaces):
 
 
 def decode_jwt(auth_header):
-    """Extract and validate JWT from Authorization header."""
     if not auth_header:
         return None
     parts = auth_header.split()
@@ -505,12 +467,7 @@ def decode_jwt(auth_header):
         return None
 
 
-# ================================================================
-# PASSWORD HELPERS
-# ================================================================
-
 def hash_password(password):
-    """Simple hash — replace with bcrypt for production."""
     salt = os.environ.get('JWT_SECRET', 'avva-salt')[:16]
     return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
 
@@ -519,12 +476,16 @@ def verify_password(password, stored_hash):
     return hash_password(password) == stored_hash
 
 
-# ================================================================
-# CORS
-# ================================================================
+def public_user(user):
+    return {
+        'email': user['email'],
+        'name': user['name'],
+        'role': user['role'],
+        'workspaces': user.get('workspaces', {})
+    }
+
 
 def cors_response(status, body):
-    """Every response includes CORS headers so the frontend can call it."""
     allowed = os.environ.get('ALLOWED_ORIGINS', '*')
     return {
         'statusCode': status,
