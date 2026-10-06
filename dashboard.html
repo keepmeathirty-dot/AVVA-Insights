@@ -581,9 +581,70 @@ function getPostedProgrammes(workspaceId) {
     return Array.isArray(parsed) ? parsed : [];
   } catch (err) { return []; }
 }
+
+function loadProgrammesFromBackend(workspaceId) {
+  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+  const token = localStorage.getItem('avva_jwt');
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
+    return Promise.resolve([]);
+  }
+  return fetch(apiEndpoint + '/programmes?workspaceId=' + encodeURIComponent(workspaceId), {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    const list = data.programmes || [];
+    localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(list));
+    return list;
+  })
+  .catch(function(err) {
+    console.warn('[AVVA] Backend programmes load failed:', err);
+    return [];
+  });
+}
 function savePostedProgrammes(workspaceId, arr) {
-  try { localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(arr)); return true; }
-  catch (err) { return false; }
+  try {
+    localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(arr));
+    return true;
+  } catch (err) { return false; }
+}
+
+function saveProgrammeToBackend(workspaceId, programme) {
+  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+  const token = localStorage.getItem('avva_jwt');
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
+    return Promise.resolve(null);
+  }
+  return fetch(apiEndpoint + '/programmes', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify(Object.assign({ workspaceId: workspaceId }, programme))
+  })
+  .then(function(res) { return res.json(); })
+  .catch(function(err) {
+    console.warn('[AVVA] Backend programme save failed:', err);
+    return null;
+  });
+}
+
+function deleteProgrammeFromBackend(workspaceId, progId) {
+  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+  const token = localStorage.getItem('avva_jwt');
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
+    return Promise.resolve(null);
+  }
+  return fetch(apiEndpoint + '/programmes', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify({ workspaceId: workspaceId, id: progId })
+  })
+  .catch(function(err) { console.warn('[AVVA] Backend programme delete failed:', err); });
 }
 
 /* ================= MAIN RENDER ================= */
@@ -673,10 +734,17 @@ function renderAll(C) {
   $('#workspace-btn').addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('show'); });
   document.addEventListener('click', () => menu.classList.remove('show'));
 
-  renderSidebar(C);
+    renderSidebar(C);
   renderCommandCentre(C);
   setupPostProgramme(C);
-}
+
+  // Pull programmes from backend (multi-device sync)
+  loadProgrammesFromBackend(C.id).then(function(list) {
+    if (list && list.length) {
+      console.log('[AVVA] Loaded', list.length, 'programmes from backend');
+      renderProgrammes(C);
+    }
+  });
 
 /* ================= SIDEBAR ================= */
 function renderSidebar(C) {
@@ -1418,6 +1486,10 @@ function deleteProgramme(workspaceId, progId) {
   if (!confirm(`Delete programme "${target.name}"?`)) return;
   const updated = existing.filter(p => p.id !== progId);
   savePostedProgrammes(workspaceId, updated);
+
+  // Also delete from backend
+  deleteProgrammeFromBackend(workspaceId, progId);
+
   toast('Programme deleted');
   if (CONFIG) renderProgrammes(CONFIG);
 }
@@ -1480,6 +1552,9 @@ function setupPostProgramme(C) {
     existing.unshift(newProg);
     const saved = savePostedProgrammes(C.id, existing);
     if (!saved) { toast('Storage error — could not save'); return; }
+        // Save to backend (multi-device sync)
+    saveProgrammeToBackend(C.id, newProg);
+
     toast(`✓ Programme "${name}" published`);
     closePanel();
     resetForm();
