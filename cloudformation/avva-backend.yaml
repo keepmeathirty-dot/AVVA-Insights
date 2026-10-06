@@ -191,13 +191,13 @@ Resources:
       StageName: $default
       AutoDeploy: true
 
-  LambdaPermission:
+    LambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref ApiLambda
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/*
+      SourceArn: !Sub arn:aws:apigateway:${AWS::Region}:${AWS::AccountId}:lambda:path/*
 
 Outputs:
   ApiEndpoint:
