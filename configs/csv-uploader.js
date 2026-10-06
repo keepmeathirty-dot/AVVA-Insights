@@ -415,16 +415,32 @@ programmes: {
   }
 
   /* ---------- 5. STORAGE ---------- */
-  function saveUploadedWorkspace(config) {
+    function saveUploadedWorkspace(config) {
     try {
+      // Always save to localStorage first (instant cache)
       const key = 'avva_workspace_' + config.id;
       localStorage.setItem(key, JSON.stringify(config));
 
-      // Update list of uploaded workspace IDs
       const listKey = 'avva_uploaded_workspaces';
       const list = JSON.parse(localStorage.getItem(listKey) || '[]');
       if (!list.includes(config.id)) list.push(config.id);
       localStorage.setItem(listKey, JSON.stringify(list));
+
+      // Also save to backend (for multi-device sync)
+      const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+      const token = localStorage.getItem('avva_jwt');
+      if (apiEndpoint && token && apiEndpoint.indexOf('http') === 0) {
+        fetch(apiEndpoint + '/workspaces', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify(config)
+        }).catch(function(err) {
+          console.warn('[AVVA] Backend save failed (localStorage still works):', err);
+        });
+      }
 
       return true;
     } catch (err) {
@@ -432,12 +448,36 @@ programmes: {
       return false;
     }
   }
-
-  function loadUploadedWorkspace(id) {
+   function loadUploadedWorkspace(id) {
     try {
       const raw = localStorage.getItem('avva_workspace_' + id);
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
+  }
+
+  function loadWorkspacesFromBackend() {
+    const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+    const token = localStorage.getItem('avva_jwt');
+    if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
+      return Promise.resolve([]);
+    }
+    return fetch(apiEndpoint + '/workspaces', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      const list = data.workspaces || [];
+      // Cache each workspace in localStorage
+      list.forEach(function(w) { localStorage.setItem('avva_workspace_' + w.id, JSON.stringify(w)); });
+      // Update the ID list
+      const ids = list.map(function(w) { return w.id; });
+      localStorage.setItem('avva_uploaded_workspaces', JSON.stringify(ids));
+      return list;
+    })
+    .catch(function(err) {
+      console.warn('[AVVA] Backend load failed:', err);
+      return [];
+    });
   }
 
   function listUploadedWorkspaces() {
@@ -447,24 +487,40 @@ programmes: {
     } catch { return []; }
   }
 
-  function deleteUploadedWorkspace(id) {
+    function deleteUploadedWorkspace(id) {
     localStorage.removeItem('avva_workspace_' + id);
     const listKey = 'avva_uploaded_workspaces';
     const list = JSON.parse(localStorage.getItem(listKey) || '[]');
     localStorage.setItem(listKey, JSON.stringify(list.filter(x => x !== id)));
+
+    // Also delete from backend
+    const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+    const token = localStorage.getItem('avva_jwt');
+    if (apiEndpoint && token && apiEndpoint.indexOf('http') === 0) {
+      fetch(apiEndpoint + '/workspaces', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ id: id })
+      }).catch(function(err) {
+        console.warn('[AVVA] Backend delete failed:', err);
+      });
+    }
   }
 
   /* ---------- 6. PUBLIC API ---------- */
-  window.AVVA_CSV = {
+    window.AVVA_CSV = {
     parse: parseCSV,
     detectColumns: detectColumnTypes,
     generateConfig: generateWorkspaceConfig,
     save: saveUploadedWorkspace,
     load: loadUploadedWorkspace,
+    loadFromBackend: loadWorkspacesFromBackend,
     list: listUploadedWorkspaces,
     remove: deleteUploadedWorkspace,
     matchDistrict: matchDistrictName
   };
-
   console.log('[AVVA] CSV Uploader loaded');
 })();
