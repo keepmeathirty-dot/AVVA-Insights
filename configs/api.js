@@ -7,7 +7,7 @@
 window.AVVA_API = {
   // The API Gateway endpoint from CloudFormation Outputs
   // Example: https://abc123xyz.execute-api.af-south-1.amazonaws.com
-  endpoint: "YOUR_ENDPOINT_HERE",
+  endpoint: "https://cm9nwo7nml.execute-api.af-south-1.amazonaws.com",
 
   // AWS region — must match where the backend is deployed
   region: "af-south-1",
