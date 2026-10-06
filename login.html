@@ -49,46 +49,70 @@ document.getElementById('login-form').addEventListener('submit', e => {
   const errEl = document.getElementById('error');
   errEl.classList.remove('show');
 
-  const accounts = window.AVVA_ACCOUNTS || [];
-  const account = accounts.find(a => a.email.toLowerCase() === email && a.password === password);
+    // Call the real backend API
+  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+  const useApi = apiEndpoint && apiEndpoint !== "__AWS_API_ENDPOINT__" && apiEndpoint !== "YOUR_API_ENDPOINT_HERE";
 
-  if (!account) {
+  if (useApi) {
+    // Real backend login
+    fetch(apiEndpoint + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password })
+    })
+    .then(res => res.json().then(data => ({ status: res.status, data: data })))
+    .then(({ status, data }) => {
+      if (status !== 200 || !data.token) {
+        errEl.textContent = data.error || 'Invalid email or password';
+        errEl.classList.add('show');
+        return;
+      }
+
+      // Save session with real JWT
+      localStorage.setItem('avva_jwt', data.token);
+      localStorage.setItem('avva_session', JSON.stringify({
+        email: data.user.email,
+        name: data.user.name,
+        role: data.user.role,
+        workspaces: data.user.workspaces || {},
+        signedInAt: Date.now()
+      }));
+
+      // Route: single workspace vs picker
+      const wsKeys = Object.keys(data.user.workspaces || {});
+      if (data.user.workspaces && data.user.workspaces["*"]) {
+        window.location.href = 'picker.html';
+      } else if (wsKeys.length === 1) {
+        localStorage.setItem('avva_last_workspace', wsKeys[0]);
+        window.location.href = 'dashboard.html?workspace=' + wsKeys[0];
+      } else if (wsKeys.length > 1) {
+        window.location.href = 'picker.html';
+      } else {
+        errEl.textContent = 'Your account has no workspace access yet.';
+        errEl.classList.add('show');
+      }
+    })
+    .catch(err => {
+      errEl.textContent = 'Connection error: ' + err.message;
+      errEl.classList.add('show');
+    });
+
+    return; // API call handles everything — don't fall through
+  }
+
+  // Fallback: demo credentials (if API not configured)
+  const demoAccount = (window.AVVA_ACCOUNTS || []).find(a => a.email.toLowerCase() === email && a.password === password);
+  if (!demoAccount) {
     errEl.classList.add('show');
     return;
   }
-
-  // Save session
   localStorage.setItem('avva_session', JSON.stringify({
-    email: account.email,
-    name: account.name,
-    role: account.role,
-    workspaces: account.workspaces,
+    email: demoAccount.email,
+    name: demoAccount.name,
+    role: demoAccount.role,
+    workspaces: demoAccount.workspaces,
     signedInAt: Date.now()
   }));
-
-  // Determine accessible workspace IDs
-  const registry = window.AVVA_WORKSPACES || [];
-  let accessible = [];
-  if (account.workspaces["*"]) {
-    accessible = registry.map(w => ({ id: w.id, role: account.workspaces["*"] }));
-  } else {
-    accessible = registry
-      .filter(w => account.workspaces[w.id])
-      .map(w => ({ id: w.id, role: account.workspaces[w.id] }));
-  }
-
-  if (accessible.length === 1) {
-    // Single workspace — skip picker
-    localStorage.setItem('avva_last_workspace', accessible[0].id);
-    window.location.href = `dashboard.html?workspace=${accessible[0].id}`;
-  } else if (accessible.length > 1) {
-    window.location.href = 'picker.html';
-  } else {
-    errEl.textContent = 'Your account has no workspace access. Contact your administrator.';
-    errEl.classList.add('show');
-    localStorage.removeItem('avva_session');
-  }
-});
 </script>
 </body>
 </html>
