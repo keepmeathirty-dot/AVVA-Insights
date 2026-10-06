@@ -17,6 +17,7 @@ input{width:100%;padding:12px 14px;border-radius:9px;background:rgba(255,255,255
 input:focus{outline:none;border-color:#7c3aed;background:rgba(124,58,237,0.08)}
 button{width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#4f25d8);color:#fff;font-weight:600;font-size:14px;letter-spacing:.03em;cursor:pointer}
 button:hover{opacity:0.95}
+button:disabled{opacity:0.5;cursor:not-allowed}
 .error{margin-top:14px;padding:10px 12px;border-radius:8px;font-size:12px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;display:none}
 .error.show{display:block}
 .back{display:inline-block;margin-top:22px;font-size:11px;color:#94a3b8;text-decoration:none}
@@ -33,7 +34,7 @@ button:hover{opacity:0.95}
     <input type="email" id="email" placeholder="your.name@institution.co.za" required autocomplete="username">
     <label for="password">Password</label>
     <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
-    <button type="submit">Sign in →</button>
+    <button type="submit" id="submit-btn">Sign in →</button>
     <div class="error" id="error">Invalid credentials. Please try again.</div>
   </form>
   <a href="index.html" class="back">← Back to home</a>
@@ -42,77 +43,114 @@ button:hover{opacity:0.95}
 <script src="configs/registry.js"></script>
 <script src="configs/accounts.js"></script>
 <script>
-document.getElementById('login-form').addEventListener('submit', e => {
+document.getElementById('login-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  const email = document.getElementById('email').value.trim().toLowerCase();
-  const password = document.getElementById('password').value;
-  const errEl = document.getElementById('error');
+  var email = document.getElementById('email').value.trim().toLowerCase();
+  var password = document.getElementById('password').value;
+  var errEl = document.getElementById('error');
+  var btn = document.getElementById('submit-btn');
   errEl.classList.remove('show');
 
-    // Call the real backend API
-  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
-  const useApi = apiEndpoint && apiEndpoint !== "__AWS_API_ENDPOINT__" && apiEndpoint !== "YOUR_API_ENDPOINT_HERE";
+  if (!email || !password) {
+    errEl.textContent = 'Email and password are required';
+    errEl.classList.add('show');
+    return;
+  }
+
+  var apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+  var useApi = apiEndpoint && apiEndpoint.indexOf('http') === 0;
 
   if (useApi) {
-    // Real backend login
+    // ---------- REAL BACKEND LOGIN ----------
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
+
     fetch(apiEndpoint + '/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email, password: password })
     })
-    .then(res => res.json().then(data => ({ status: res.status, data: data })))
-    .then(({ status, data }) => {
-      if (status !== 200 || !data.token) {
-        errEl.textContent = data.error || 'Invalid email or password';
+    .then(function(res) {
+      return res.json().then(function(data) { return { status: res.status, data: data }; });
+    })
+    .then(function(result) {
+      btn.disabled = false;
+      btn.textContent = 'Sign in →';
+
+      if (result.status !== 200 || !result.data.token) {
+        errEl.textContent = result.data.error || 'Invalid email or password';
         errEl.classList.add('show');
         return;
       }
 
-      // Save session with real JWT
-      localStorage.setItem('avva_jwt', data.token);
+      // Save JWT + session
+      localStorage.setItem('avva_jwt', result.data.token);
       localStorage.setItem('avva_session', JSON.stringify({
-        email: data.user.email,
-        name: data.user.name,
-        role: data.user.role,
-        workspaces: data.user.workspaces || {},
+        email: result.data.user.email,
+        name: result.data.user.name,
+        role: result.data.user.role,
+        workspaces: result.data.user.workspaces || {},
         signedInAt: Date.now()
       }));
 
-      // Route: single workspace vs picker
-      const wsKeys = Object.keys(data.user.workspaces || {});
-      if (data.user.workspaces && data.user.workspaces["*"]) {
+      // Route
+      var ws = result.data.user.workspaces || {};
+      var keys = Object.keys(ws);
+      if (ws["*"]) {
         window.location.href = 'picker.html';
-      } else if (wsKeys.length === 1) {
-        localStorage.setItem('avva_last_workspace', wsKeys[0]);
-        window.location.href = 'dashboard.html?workspace=' + wsKeys[0];
-      } else if (wsKeys.length > 1) {
+      } else if (keys.length === 1) {
+        localStorage.setItem('avva_last_workspace', keys[0]);
+        window.location.href = 'dashboard.html?workspace=' + keys[0];
+      } else if (keys.length > 1) {
         window.location.href = 'picker.html';
       } else {
-        errEl.textContent = 'Your account has no workspace access yet.';
+        errEl.textContent = 'Your account has no workspace access yet. Contact your administrator.';
         errEl.classList.add('show');
       }
     })
-    .catch(err => {
+    .catch(function(err) {
+      btn.disabled = false;
+      btn.textContent = 'Sign in →';
       errEl.textContent = 'Connection error: ' + err.message;
       errEl.classList.add('show');
     });
 
-    return; // API call handles everything — don't fall through
-  }
+  } else {
+    // ---------- FALLBACK: DEMO CREDENTIALS ----------
+    var accounts = window.AVVA_ACCOUNTS || [];
+    var account = null;
+    for (var i = 0; i < accounts.length; i++) {
+      if (accounts[i].email.toLowerCase() === email && accounts[i].password === password) {
+        account = accounts[i];
+        break;
+      }
+    }
 
-  // Fallback: demo credentials (if API not configured)
-  const demoAccount = (window.AVVA_ACCOUNTS || []).find(a => a.email.toLowerCase() === email && a.password === password);
-  if (!demoAccount) {
-    errEl.classList.add('show');
-    return;
+    if (!account) {
+      errEl.textContent = 'Invalid email or password';
+      errEl.classList.add('show');
+      return;
+    }
+
+    localStorage.setItem('avva_session', JSON.stringify({
+      email: account.email,
+      name: account.name,
+      role: account.role,
+      workspaces: account.workspaces,
+      signedInAt: Date.now()
+    }));
+
+    var wsKeys = Object.keys(account.workspaces || {});
+    if (account.workspaces && account.workspaces["*"]) {
+      window.location.href = 'picker.html';
+    } else if (wsKeys.length === 1) {
+      localStorage.setItem('avva_last_workspace', wsKeys[0]);
+      window.location.href = 'dashboard.html?workspace=' + wsKeys[0];
+    } else {
+      window.location.href = 'picker.html';
+    }
   }
-  localStorage.setItem('avva_session', JSON.stringify({
-    email: demoAccount.email,
-    name: demoAccount.name,
-    role: demoAccount.role,
-    workspaces: demoAccount.workspaces,
-    signedInAt: Date.now()
-  }));
+});
 </script>
 </body>
 </html>
