@@ -998,15 +998,27 @@ function renderCommandCentre(C) {
         currentLayer = L.layerGroup().addTo(map);
       }
 
-      leftovers.forEach((lo, i) => {
-        const cols = Math.ceil(Math.sqrt(leftovers.length));
-        const row = Math.floor(i / cols);
-        const col = i % cols;
-        const lat = -28.0 + (row * 0.8);
-        const lng = 25.0 + (col * 0.8);
-        const radius = 8 + Math.min(1, lo.value / (Math.max.apply(null, leftovers.map(l => l.value)) || 1)) * 32;
+            leftovers.forEach((lo, i) => {
+        const d = lo.props;
+        // Place bubble at the district's actual centroid if bounds exist
+        let lat = -28.5, lng = 24.5;
+        if (d.bounds && Array.isArray(d.bounds) && d.bounds.length === 2) {
+          const [[south, west], [north, east]] = d.bounds;
+          lat = (south + north) / 2;
+          lng = (west + east) / 2;
+        } else {
+          const cols = Math.ceil(Math.sqrt(leftovers.length));
+          const row = Math.floor(i / cols);
+          const col = i % cols;
+          lat = -28.0 + (row * 1.2);
+          lng = 24.0 + (col * 1.2);
+        }
+        const maxVal = Math.max.apply(null, leftovers.map(l => l.value)) || 1;
+        const radius = 8 + (lo.value / maxVal) * 24;
         const colour = getColour(lo.value, min, max);
-        const circle = L.circleMarker([lat, lng], { radius: radius, fillColor: colour, fillOpacity: 0.75, color: '#fff', weight: 1.5 }).addTo(map);
+        const circle = L.circleMarker([lat, lng], {
+          radius: radius, fillColor: colour, fillOpacity: 0.85, color: '#fff', weight: 1.5
+        }).addTo(map);
         circle.bindTooltip('<strong>' + lo.name + '</strong><br>' + lo.value.toLocaleString('en-ZA') + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
         circle.on('click', () => showDetail(lo.props));
         currentLayer.addLayer(circle);
@@ -1095,16 +1107,40 @@ function renderCommandCentre(C) {
     });
   });
 
-  document.querySelectorAll('#layer-controls [data-layer]').forEach(cb => {
+    document.querySelectorAll('#layer-controls [data-layer]').forEach(cb => {
     cb.addEventListener('change', () => {
+      const layerId = cb.dataset.layer;
       const label = cb.parentElement.textContent.trim();
       toast(label + ' ' + (cb.checked ? 'shown' : 'hidden'));
-      const matchedMetric = (C.metrics || []).find(m =>
-        m.label.toLowerCase() === label.toLowerCase() || cb.dataset.layer === m.id
-      );
-      if (matchedMetric) {
-        currentMetric = matchedMetric.id;
-        buildLayer(currentData || C.districts, matchedMetric.id);
+
+      // Try multiple matching strategies
+      let targetMetric = null;
+
+      // 1. Direct match by layer id to metric id
+      targetMetric = (C.metrics || []).find(m => m.id === layerId);
+
+      // 2. Match by label (both directions, case-insensitive)
+      if (!targetMetric) {
+        targetMetric = (C.metrics || []).find(m =>
+          m.label.toLowerCase().trim() === label.toLowerCase().trim()
+        );
+      }
+
+      // 3. Match by keywords in label
+      if (!targetMetric) {
+        const keyword = label.toLowerCase();
+        targetMetric = (C.metrics || []).find(m =>
+          keyword.includes(m.id.toLowerCase()) ||
+          m.id.toLowerCase().includes(keyword.replace(/\s+/g, '_'))
+        );
+      }
+
+      if (targetMetric) {
+        currentMetric = targetMetric.id;
+        console.log('[AVVA] Layer switch:', layerId, '→ metric:', targetMetric.id);
+        buildLayer(currentData || C.districts, targetMetric.id);
+      } else {
+        console.warn('[AVVA] No metric matched for layer:', layerId, label);
       }
     });
   });
@@ -1216,15 +1252,35 @@ function renderFullMap(C, item) {
 
   drawLayer(C.districts, C.primaryMetric);
 
-  document.querySelectorAll('#mapfull-layer-controls [data-layer]').forEach(cb => {
+    document.querySelectorAll('#mapfull-layer-controls [data-layer]').forEach(cb => {
     cb.addEventListener('change', () => {
+      const layerId = cb.dataset.layer;
       const label = cb.parentElement.textContent.trim();
       toast(label + ' ' + (cb.checked ? 'shown' : 'hidden'));
-      const matchedMetric = (C.metrics || []).find(m => m.label.toLowerCase() === label.toLowerCase() || cb.dataset.layer === m.id);
-      if (matchedMetric) drawLayer(C.districts, matchedMetric.id);
+
+      let targetMetric = null;
+      targetMetric = (C.metrics || []).find(m => m.id === layerId);
+      if (!targetMetric) {
+        targetMetric = (C.metrics || []).find(m =>
+          m.label.toLowerCase().trim() === label.toLowerCase().trim()
+        );
+      }
+      if (!targetMetric) {
+        const keyword = label.toLowerCase();
+        targetMetric = (C.metrics || []).find(m =>
+          keyword.includes(m.id.toLowerCase()) ||
+          m.id.toLowerCase().includes(keyword.replace(/\s+/g, '_'))
+        );
+      }
+
+      if (targetMetric) {
+        console.log('[AVVA] Observatory layer switch:', layerId, '→ metric:', targetMetric.id);
+        drawLayer(C.districts, targetMetric.id);
+      } else {
+        console.warn('[AVVA] No metric matched for observatory layer:', layerId, label);
+      }
     });
   });
-}
 
 /* ================= CHAT ================= */
 let chatHistory = [];
