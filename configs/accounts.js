@@ -96,6 +96,14 @@ window.AVVA_ACCOUNTS = [
     role: "Brand Manager",
     workspaces: { "hennessy": "manager" }
   }
+  ,
+  {
+    email: "tigerbrands@avva.demo",
+    password: "tiger123",
+    name: "Tiger Brands Demo",
+    role: "Manager",
+    workspaces: { "fmcg-intelligence": "manager" }
+  }
 ];
 
 /* ================================================================
