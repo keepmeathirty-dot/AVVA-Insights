@@ -853,24 +853,58 @@ function renderCommandCentre(C) {
   let currentData = null;
   let currentMetric = C.primaryMetric;
 
-  function buildLayer(dataObj, metricKey) {
+    function buildLayer(dataObj, metricKey) {
     const nms = Object.keys(dataObj);
     if (!nms.length) return;
     const values = nms.map(n => dataObj[n][metricKey] || 0);
     const min = Math.min.apply(null, values);
     const max = Math.max.apply(null, values);
 
-    // Draw rectangles (no GeoJSON dependency — instant, reliable)
-    const features = nms.map(name => {
-      const d = dataObj[name];
-      const bounds = d.bounds || [[-29.5, 30.0], [-28.5, 31.0]];
-      const [[south, west], [north, east]] = bounds;
-      return {
-        type: 'Feature',
-        properties: Object.assign({ name: name }, d),
-        geometry: { type: 'Polygon', coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]] }
-      };
+    const level = (window.AVVA_SA_LOOKUP ? window.AVVA_SA_LOOKUP.detectLevel(nms) : 'district');
+
+    if (!window.AVVA_GEO) {
+      console.warn('[AVVA] Geo resolver not loaded');
+      return;
+    }
+
+    window.AVVA_GEO.load(level).then(() => {
+      const features = [];
+      nms.forEach(name => {
+        const d = dataObj[name];
+        const props = Object.assign({ name: name }, d);
+        const match = window.AVVA_GEO.findMatch(level, name);
+        if (match) features.push({ type: 'Feature', properties: props, geometry: match.geometry });
+      });
+
+      if (currentLayer) map.removeLayer(currentLayer);
+
+      if (features.length) {
+        currentLayer = L.geoJSON({ type: 'FeatureCollection', features: features }, {
+          style: f => ({
+            fillColor: getColour(f.properties[metricKey] || 0, min, max),
+            weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78
+          }),
+          onEachFeature: (f, layer) => {
+            const p = f.properties;
+            const val = p[metricKey] || 0;
+            const valDisplay = (metricKey.indexOf('rands') > -1 || metricKey === 'revenue' || metricKey === 'funding') ? fmtCurrencyM(val) : fmtNumber(val);
+            layer.bindTooltip('<strong>' + p.name + '</strong><br>' + valDisplay + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
+            layer.on({
+              mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
+              mouseout: e => currentLayer.resetStyle(e.target),
+              click: () => showDetail(p)
+            });
+          }
+        }).addTo(map);
+
+        try { map.fitBounds(currentLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
+      } else {
+        currentLayer = L.layerGroup().addTo(map);
+      }
+
+      currentData = dataObj;
     });
+  }
 
     if (currentLayer) map.removeLayer(currentLayer);
     currentLayer = L.geoJSON({ type: 'FeatureCollection', features: features }, {
