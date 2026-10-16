@@ -167,7 +167,16 @@
 .toast{position:fixed;right:18px;bottom:18px;background:#172243;color:white;padding:11px 15px;border-radius:9px;box-shadow:0 12px 35px #1118;z-index:2000;display:none}
 .toast.show{display:block}
 .empty-state{text-align:center;padding:60px 20px;color:#94a3b8;font-size:13px}
-@media(max-width:1350px){.metrics{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.bottom{grid-template-columns:repeat(2,1fr)}#user-name{display:none}}
+.tenant-row{display:grid;grid-template-columns:140px 1fr 200px 100px;gap:12px;padding:12px;border-bottom:1px solid #eef1f6;align-items:center}
+.tenant-row:last-child{border-bottom:none}
+.tenant-row:hover{background:#fafbff}
+.tenant-row .tid{font-family:ui-monospace,monospace;font-size:12px;color:var(--accent-primary);font-weight:700}
+.tenant-row .tlabel{font-size:12px;color:#1f2d4d;font-weight:600}
+.tenant-row .tmeta{font-size:10px;color:#94a3b8}
+.copy-link{display:flex;gap:8px;margin-top:12px;padding:12px;background:#f0fdf4;border:1px solid #86efac;border-radius:9px;font-size:12px}
+.copy-link input{flex:1;border:1px solid #86efac;border-radius:6px;padding:6px 10px;font-family:ui-monospace,monospace;font-size:11px;background:#fff;color:#166534}
+.copy-link button{background:#16a34a;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-weight:700;font-size:11px;cursor:pointer}
+@media(max-width:1350px){.metrics{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.bottom{grid-template-columns:repeat(2,1fr)}#user-name{display:none}.tenant-row{grid-template-columns:120px 1fr 100px}}
 @media(max-width:900px){.app{display:block}.sidebar{position:fixed;left:0;transform:translateX(-100%);transition:transform .2s;width:228px;box-shadow:12px 0 30px #0b174122}.sidebar.open{transform:translateX(0)}.topbar{padding:0 14px}.workspace-switch{min-width:0}.top-title{display:none}.content{padding:14px}.search{width:140px}.grid{grid-template-columns:1fr}.right{grid-column:auto}.map-panel,.zoom-panel{height:480px}.field-row{grid-template-columns:1fr}}
 </style>
 </head>
@@ -303,6 +312,16 @@
         <div class="cards-grid" id="uploads-grid"></div>
       </section>
 
+      <section class="view" data-view="tenants">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+          <div><h1 style="font-size:22px;margin:0 0 4px">Manage Tenants</h1><p class="sub" style="font-size:12px">Institutions with access to AVVA Insights</p></div>
+          <button class="btn-primary" id="add-tenant-btn">+ Add Tenant</button>
+        </div>
+        <div class="card panel" style="padding:0">
+          <div id="tenants-list" style="padding:8px 0"></div>
+        </div>
+      </section>
+
       <section class="view" data-view="info">
         <div style="margin-bottom:14px"><h1 id="info-title" style="font-size:22px;margin:0 0 4px"></h1><p class="sub" id="info-sub" style="font-size:12px"></p></div>
         <div class="card panel" style="padding:22px"><div id="info-body"></div></div>
@@ -312,6 +331,7 @@
 </div>
 
 <div class="backdrop" id="backdrop"></div>
+
 <aside class="slideout" id="post-panel">
   <div class="slideout-head"><h2>Post a Programme</h2><button class="close" id="post-close">✕</button></div>
   <div class="slideout-body">
@@ -338,6 +358,35 @@
   <div class="slideout-foot"><button class="btn-secondary" id="post-cancel">Cancel</button><button class="btn-primary" id="post-submit">Publish Programme</button></div>
 </aside>
 
+<aside class="slideout" id="tenant-panel">
+  <div class="slideout-head"><h2>Add Tenant</h2><button class="close" id="tenant-close">✕</button></div>
+  <div class="slideout-body">
+    <form id="tenant-form">
+      <div class="field"><label>Tenant ID * (lowercase, no spaces)</label><input id="tf-id" placeholder="e.g. kznhealth" pattern="[a-z][a-z0-9]*" required></div>
+      <div class="field"><label>Institution name *</label><input id="tf-label" placeholder="e.g. KwaZulu-Natal Department of Health" required></div>
+      <div class="field"><label>Short name</label><input id="tf-short" placeholder="e.g. KZN Health"></div>
+      <div class="field">
+        <label>Workspaces</label>
+        <div id="tf-workspaces" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px"></div>
+        <div class="hint">Which workspaces can this tenant access?</div>
+      </div>
+      <div class="field">
+        <label>Default workspace</label>
+        <select id="tf-default"><option value="">Select one</option></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>First admin name *</label><input id="tf-admin-name" required></div>
+        <div class="field"><label>First admin email *</label><input id="tf-admin-email" type="email" required></div>
+      </div>
+      <div class="field">
+        <label>Contact phone (optional)</label>
+        <input id="tf-phone" placeholder="+27 ...">
+      </div>
+    </form>
+  </div>
+  <div class="slideout-foot"><button class="btn-secondary" id="tenant-cancel">Cancel</button><button class="btn-primary" id="tenant-submit">Create Tenant</button></div>
+</aside>
+
 <div class="toast" id="toast"></div>
 
 <script src="configs/registry.js"></script>
@@ -349,10 +398,9 @@
 <script src="configs/api.js"></script>
 <script>
 /* ================================================================
-   AVVA INSIGHTS — RENDER ENGINE (tenant-aware, inlined tenants)
+   AVVA INSIGHTS — RENDER ENGINE (tenant-aware + provisioning)
    ================================================================ */
 
-/* ---- TENANT REGISTRY (inline) ---- */
 window.AVVA_TENANTS = [
   { id: "kzndoa", label: "KwaZulu-Natal Department of Agriculture", shortLabel: "KZN DoA", status: "active", workspaces: ["kzn-doa"], defaultWorkspace: "kzn-doa", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#4f25d8" }, plan: "enterprise", createdAt: "2026-01-01" },
   { id: "tigerbrands", label: "Tiger Brands", shortLabel: "Tiger Brands", status: "active", workspaces: ["fmcg-intelligence"], defaultWorkspace: "fmcg-intelligence", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#ea580c" }, plan: "enterprise", createdAt: "2026-10-15" },
@@ -367,7 +415,6 @@ window.AVVA_detectTenantFromPath = function() {
   return window.AVVA_TENANTS.find(function(t){ return t.id === segments[0]; }) || null;
 };
 
-/* Detect tenant: path first, then query param, then fallback */
 let currentTenant = null;
 try {
   currentTenant = window.AVVA_detectTenantFromPath();
@@ -380,11 +427,9 @@ try {
 
 console.log('[AVVA] Tenants:', window.AVVA_TENANTS.length, '| Active:', currentTenant ? currentTenant.id : 'none');
 
-/* ---- HELPERS ---- */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
-/* ---- DEMO SESSION ---- */
 const session = {
   email: 'admin@avva.demo',
   name: 'Demo User',
@@ -393,7 +438,6 @@ const session = {
   signedInAt: Date.now()
 };
 
-/* ---- WORKSPACE LIST ---- */
 const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
   window.AVVA_CSV ? window.AVVA_CSV.list().map(u => ({
     id: u.id, label: u.workspaceName,
@@ -418,7 +462,6 @@ if (!registry.length) {
   throw new Error('No workspaces');
 }
 
-/* ---- SELECT WORKSPACE ---- */
 const urlParams = new URLSearchParams(window.location.search);
 const requestedId = urlParams.get('workspace');
 const activeEntry = registry.find(w => w.id === requestedId)
@@ -429,7 +472,6 @@ const OVERRIDE = sessionStorage.getItem('avva_role_override_' + activeEntry.id);
 const USER_ROLE = OVERRIDE || 'admin';
 const roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: 'Administrator', hide: [] };
 
-/* ---- LOADER ---- */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
@@ -462,7 +504,7 @@ let CONFIG = null;
   if (uploaded) { CONFIG = uploaded; renderAll(CONFIG); return; }
 
   if (!activeEntry.configPath) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace. <a href="dashboard.html" style="color:#4f25d8">← Back</a></div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace.</div>';
     return;
   }
   try { await loadScript(activeEntry.configPath); }
@@ -478,7 +520,6 @@ let CONFIG = null;
   renderAll(CONFIG);
 })();
 
-/* ---- TOAST ---- */
 const toastEl = $('#toast');
 let toastTimer;
 function toast(msg) {
@@ -488,43 +529,35 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
 }
 
-/* ---- BACKEND PROGRAMMES ---- */
-function loadProgrammesFromBackend(workspaceId) {
+/* ---- BACKEND HELPER ---- */
+function apiCall(path, method, body) {
   const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
   const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return Promise.resolve([]);
-  return fetch(apiEndpoint + '/programmes?workspaceId=' + encodeURIComponent(workspaceId), {
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return Promise.resolve({ error: 'Not configured' });
+  const opts = {
+    method: method || 'GET',
     headers: { 'Authorization': 'Bearer ' + token }
-  })
-  .then(r => r.json())
-  .then(data => {
+  };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  return fetch(apiEndpoint + path, opts).then(r => r.json()).catch(err => ({ error: err.message }));
+}
+
+/* ---- BACKEND PROGRAMMES ---- */
+function loadProgrammesFromBackend(workspaceId) {
+  return apiCall('/programmes?workspaceId=' + encodeURIComponent(workspaceId)).then(data => {
     const list = data.programmes || [];
     if (list.length) localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(list));
     return list;
-  })
-  .catch(() => []);
+  });
 }
-
 function saveProgrammeToBackend(workspaceId, programme) {
-  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
-  const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return Promise.resolve(null);
-  return fetch(apiEndpoint + '/programmes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify(Object.assign({ workspaceId: workspaceId }, programme))
-  }).then(r => r.json()).catch(() => null);
+  return apiCall('/programmes', 'POST', Object.assign({ workspaceId: workspaceId }, programme));
 }
-
 function deleteProgrammeFromBackend(workspaceId, progId) {
-  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
-  const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return;
-  fetch(apiEndpoint + '/programmes', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify({ workspaceId: workspaceId, id: progId })
-  }).catch(() => {});
+  return apiCall('/programmes', 'DELETE', { workspaceId: workspaceId, id: progId });
 }
 
 /* ---- RENDER ---- */
@@ -535,7 +568,6 @@ function renderAll(C) {
     document.documentElement.style.setProperty('--accent-mid', C.accent.mid);
   }
 
-  /* Tenant name overrides org name */
   if (currentTenant) {
     $('#org-name').textContent = currentTenant.shortLabel || currentTenant.label;
     $('#org-tagline').textContent = currentTenant.label;
@@ -569,7 +601,6 @@ function renderAll(C) {
   $('#user-name').innerHTML = 'Demo User<small>Administrator</small>';
   $('#role-label').textContent = roleRules.label.toUpperCase();
 
-  /* Role pill */
   const rolePill = $('#role-pill');
   const old = rolePill.querySelector('.role-menu');
   if (old) old.remove();
@@ -606,7 +637,6 @@ function renderAll(C) {
     window.location.href = 'index.html';
   };
 
-  /* Workspace switcher */
   const menu = $('#workspace-menu');
   menu.innerHTML = registry.map(w =>
     '<button data-ws="' + w.id + '" class="' + (w.id === C.id ? 'active' : '') + '">' +
@@ -660,6 +690,18 @@ function renderSidebar(C) {
     });
   });
 
+  /* Platform admin extra: Manage Tenants */
+  if (currentTenant && currentTenant.id === 'reemerge') {
+    const manageBtn = document.createElement('button');
+    manageBtn.dataset.id = 'manage-tenants';
+    manageBtn.dataset.label = 'Manage Tenants';
+    manageBtn.innerHTML = '<span class="ico">⚏</span>Manage Tenants';
+    manageBtn.onclick = function() {
+      activateView(C, { id: 'manage-tenants', label: 'Manage Tenants', view: 'tenants' }, manageBtn);
+    };
+    nav.insertBefore(manageBtn, nav.firstChild);
+  }
+
   const uploadItems = [
     { id: 'upload-data', label: 'Upload Data', icon: '⤒', view: 'upload' },
     { id: 'my-uploads', label: 'My Uploads', icon: '▤', view: 'uploads' }
@@ -703,6 +745,9 @@ function activateView(C, item, btn) {
   } else if (view === 'uploads') {
     document.querySelector('[data-view="uploads"]').classList.add('active');
     renderUploadsView(C);
+  } else if (view === 'tenants') {
+    document.querySelector('[data-view="tenants"]').classList.add('active');
+    renderTenantsView(C);
   } else if (view === 'form') {
     document.querySelector('[data-view="command"]').classList.add('active');
     openPostPanel();
@@ -710,6 +755,137 @@ function activateView(C, item, btn) {
     document.querySelector('[data-view="info"]').classList.add('active');
     renderInfo(C, item);
   }
+}
+
+/* ---- TENANTS VIEW ---- */
+function renderTenantsView(C) {
+  const el = document.getElementById('tenants-list');
+  if (!el) return;
+  el.innerHTML = window.AVVA_TENANTS.map(t =>
+    '<div class="tenant-row">' +
+      '<div class="tid">' + t.id + '</div>' +
+      '<div><div class="tlabel">' + t.label + '</div><div class="tmeta">' + (t.workspaces && t.workspaces.includes('*') ? 'All workspaces' : (t.workspaces || []).join(', ')) + '</div></div>' +
+      '<div class="tmeta">' + (t.plan || 'starter') + '</div>' +
+      '<div><a href="dashboard.html?tenant=' + t.id + '" style="font-size:11px;color:var(--accent-primary);text-decoration:none">Open →</a></div>' +
+    '</div>'
+  ).join('');
+
+  document.getElementById('add-tenant-btn').onclick = function() { openTenantPanel(C); };
+}
+
+function openTenantPanel(C) {
+  const panel = document.getElementById('tenant-panel');
+  const backdrop = document.getElementById('backdrop');
+
+  /* Populate workspaces checkboxes */
+  const wsList = (window.AVVA_WORKSPACES || []).map(w => w.id);
+  document.getElementById('tf-workspaces').innerHTML = wsList.map(w =>
+    '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" value="' + w + '">' + w + '</label>'
+  ).join('');
+
+  /* Populate default dropdown */
+  const dd = document.getElementById('tf-default');
+  dd.innerHTML = '<option value="">Select one</option>' + wsList.map(w => '<option value="' + w + '">' + w + '</option>').join('');
+
+  /* Clear form */
+  document.getElementById('tf-id').value = '';
+  document.getElementById('tf-label').value = '';
+  document.getElementById('tf-short').value = '';
+  document.getElementById('tf-admin-name').value = '';
+  document.getElementById('tf-admin-email').value = '';
+  document.getElementById('tf-phone').value = '';
+  document.querySelectorAll('#tf-workspaces input').forEach(cb => cb.checked = false);
+
+  panel.classList.add('open');
+  backdrop.classList.add('show');
+
+  document.getElementById('tenant-close').onclick = function() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('show');
+  };
+  document.getElementById('tenant-cancel').onclick = function() {
+    panel.classList.remove('open');
+    backdrop.classList.remove('show');
+  };
+
+  document.getElementById('tenant-submit').onclick = function() { submitTenant(C); };
+}
+
+function submitTenant(C) {
+  const id = document.getElementById('tf-id').value.trim().toLowerCase();
+  const label = document.getElementById('tf-label').value.trim();
+  const shortLabel = document.getElementById('tf-short').value.trim() || label;
+  const adminName = document.getElementById('tf-admin-name').value.trim();
+  const adminEmail = document.getElementById('tf-admin-email').value.trim().toLowerCase();
+  const phone = document.getElementById('tf-phone').value.trim();
+  const workspaces = Array.from(document.querySelectorAll('#tf-workspaces input:checked')).map(cb => cb.value);
+  const defaultWorkspace = document.getElementById('tf-default').value || workspaces[0] || '';
+
+  if (!id || !label || !adminName || !adminEmail) { toast('All required fields needed'); return; }
+  if (!/^[a-z][a-z0-9]*$/.test(id)) { toast('Tenant ID must be lowercase letters and numbers only'); return; }
+  if (!workspaces.length) { toast('Select at least one workspace'); return; }
+
+  const newTenant = {
+    id: id,
+    label: label,
+    shortLabel: shortLabel,
+    status: 'active',
+    workspaces: workspaces,
+    defaultWorkspace: defaultWorkspace,
+    tables: {
+      users: 'avva-users-prod',
+      workspaces: 'avva-workspaces-prod',
+      programmes: 'avva-programmes-prod',
+      audit: 'avva-audit-prod'
+    },
+    branding: { accent: '#4f25d8' },
+    plan: 'starter',
+    createdAt: new Date().toISOString()
+  };
+
+  /* Save tenant to backend */
+  apiCall('/tenants', 'POST', newTenant).then(function(res) {
+    if (res.error) {
+      toast('Error saving tenant: ' + res.error);
+      return;
+    }
+
+    /* Create first admin user */
+    apiCall('/admin/create-user', 'POST', {
+      email: adminEmail,
+      password: 'Welcome' + Math.random().toString(36).slice(2, 8),
+      name: adminName,
+      role: 'Administrator',
+      workspaces: { '*': 'admin' },
+      tenantId: id,
+      phone: phone
+    }).then(function(userRes) {
+      if (userRes.error) {
+        toast('Tenant saved but user creation failed: ' + userRes.error);
+      } else {
+        toast('✓ Tenant created: ' + id);
+      }
+
+      /* Add to in-memory registry */
+      window.AVVA_TENANTS.push(newTenant);
+
+      /* Show invite URL */
+      const inviteUrl = window.location.origin + window.location.pathname + '?tenant=' + id;
+      const inviteBox = document.createElement('div');
+      inviteBox.className = 'copy-link';
+      inviteBox.innerHTML = '<span style="font-weight:700;color:#166534">Sign-in URL:</span>' +
+        '<input value="' + inviteUrl + '" readonly onclick="this.select()">' +
+        '<button onclick="navigator.clipboard.writeText(this.previousElementSibling.value); this.textContent=\'Copied!\'">Copy</button>';
+      const panelBody = document.querySelector('#tenant-panel .slideout-body');
+      const existing = panelBody.querySelector('.copy-link');
+      if (existing) existing.remove();
+      panelBody.appendChild(inviteBox);
+
+      setTimeout(() => {
+        renderTenantsView(C);
+      }, 100);
+    });
+  });
 }
 
 /* ---- COMMAND CENTRE ---- */
@@ -808,7 +984,6 @@ function renderCommandCentre(C) {
     return '<div class="prog"><strong>' + name + '</strong><span>' + display + ' ' + C.primaryMetricLabel.toLowerCase() + '</span><div class="bar-line"><i style="width:' + ((val / maxVal) * 100).toFixed(0) + '%"></i></div></div>';
   }).join('');
 
-  /* MAP */
   const map = L.map('map', { center: C.map.center, zoom: C.map.zoom, zoomControl: false, scrollWheelZoom: true });
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -884,7 +1059,6 @@ function renderCommandCentre(C) {
         try { map.fitBounds(currentLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
       }
     }
-
     currentData = dataObj;
   }
 
