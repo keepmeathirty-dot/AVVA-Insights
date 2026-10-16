@@ -30,4 +30,11 @@ window.AVVA_WORKSPACES = [
     description: "NGO support & community impact",
     configPath: "configs/social-development.js"
   }
+  ,
+  {
+    id: "fmcg-intelligence",
+    label: "Tiger Brands — FMCG Intelligence",
+    description: "Perfect Store & Informal Retail Intelligence",
+    configPath: "configs/fmcg-intelligence.js"
+  }
 ];
