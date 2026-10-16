@@ -347,6 +347,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="configs/registry.js"></script>
+<script src="configs/tenants.js"></script>
 <script src="configs/accounts.js"></script>
 <script src="configs/ai.js"></script>
 <script src="configs/csv-uploader.js"></script>
@@ -386,11 +387,32 @@ if (!registry.length) {
   throw new Error('No workspaces');
 }
 
+/* ---- TENANT DETECTION ---- */
+const currentTenant = (window.AVVA_detectTenantFromPath && window.AVVA_detectTenantFromPath())
+                   || (window.AVVA_TENANTS && window.AVVA_TENANTS.find(t => t.id === 'reemerge'))
+                   || null;
+
+if (currentTenant) {
+  console.log('[AVVA] Tenant detected:', currentTenant.id, '—', currentTenant.label);
+}
+
+/* Filter registry to tenant's allowed workspaces */
+const tenantRegistry = currentTenant && currentTenant.workspaces.includes('*')
+  ? registry
+  : currentTenant
+    ? registry.filter(w => currentTenant.workspaces.includes(w.id))
+    : registry;
+
+if (!tenantRegistry.length) {
+  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No workspaces available for this tenant: ' + (currentTenant ? currentTenant.id : 'unknown') + '</div>';
+  throw new Error('No tenant workspaces');
+}
+
 const params = new URLSearchParams(window.location.search);
 const requestedId = params.get('workspace');
-const activeEntry = registry.find(w => w.id === requestedId)
-                 || registry.find(w => w.default)
-                 || registry[0];
+const activeEntry = tenantRegistry.find(w => w.id === requestedId)
+                 || tenantRegistry.find(w => w.id === currentTenant.defaultWorkspace)
+                 || tenantRegistry[0];
 
 const OVERRIDE = sessionStorage.getItem('avva_role_override_' + activeEntry.id);
 const USER_ROLE = OVERRIDE || 'admin';
@@ -527,8 +549,13 @@ function renderAll(C) {
   }
 
   document.title = 'AVVA Insights · ' + C.workspaceName;
-  $('#org-name').textContent = (C.org && C.org.name) || 'Reemerge Group';
-  $('#org-tagline').textContent = (C.org && C.org.tagline) || 'Making Invisible Markets Visible.';
+    if (currentTenant) {
+    $('#org-name').textContent = currentTenant.shortLabel || currentTenant.label;
+    $('#org-tagline').textContent = 'Viewing as ' + currentTenant.label;
+  } else {
+    $('#org-name').textContent = (C.org && C.org.name) || 'Reemerge Group';
+    $('#org-tagline').textContent = (C.org && C.org.tagline) || 'Making Invisible Markets Visible.';
+  }
   $('#workspace-label').textContent = C.workspaceName;
   $('#page-title').textContent = C.pageTitle;
   $('#page-subtitle').textContent = C.pageSubtitle || '';
@@ -587,8 +614,8 @@ function renderAll(C) {
     window.location.href = 'index.html';
   };
 
-  const menu = $('#workspace-menu');
-  menu.innerHTML = registry.map(w =>
+    const menu = $('#workspace-menu');
+  menu.innerHTML = tenantRegistry.map(w =>
     '<button data-ws="' + w.id + '" class="' + (w.id === C.id ? 'active' : '') + '">' +
       '<strong>' + w.label + '</strong><span>' + (w.description || '') + '</span>' +
     '</button>'
