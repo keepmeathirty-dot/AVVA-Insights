@@ -475,10 +475,10 @@ const $$ = sel => Array.from(document.querySelectorAll(sel));
 
 /* ================= SESSION GATE ================= */
 const sessionRaw = localStorage.getItem('avva_session');
-if (!sessionRaw) { window.location.href = 'login.html'; throw new Error('No session'); }
+if (!sessionRaw) { //window.location.href = 'login.html'; throw new Error('No session'); }
 let session;
 try { session = JSON.parse(sessionRaw); }
-catch (e) { window.location.href = 'login.html'; throw e; }
+catch (e) { //window.location.href = 'login.html'; throw e; }
 
 /* ================= BUILD ACCESSIBLE WORKSPACE LIST ================= */
 const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
