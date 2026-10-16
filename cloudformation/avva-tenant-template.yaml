@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AVVA Insights - Per-tenant DynamoDB tables
+
+Parameters:
+  TenantId:
+    Type: String
+    Description: Short tenant identifier (lowercase, e.g. "kzndoa")
+    AllowedPattern: '^[a-z][a-z0-9]*$'
+    MinLength: 3
+    MaxLength: 20
+
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+
+Resources:
+
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub avva-users-${TenantId}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  WorkspacesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub avva-workspaces-${TenantId}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: ownerEmail
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: OwnerIndex
+          KeySchema:
+            - AttributeName: ownerEmail
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  ProgrammesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub avva-programmes-${TenantId}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: workspaceId
+          AttributeType: S
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: workspaceId
+          KeyType: HASH
+        - AttributeName: id
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  AuditTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub avva-audit-${TenantId}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: N
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+  TenantsRegistryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: avva-tenants
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # Grant the shared AVVA Lambda access to this tenant's tables
+  LambdaTenantAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub avva-tenant-access-${TenantId}
+      Description: !Sub Access policy for AVVA tenant ${TenantId}
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+              - dynamodb:Query
+              - dynamodb:Scan
+            Resource:
+              - !GetAtt UsersTable.Arn
+              - !GetAtt WorkspacesTable.Arn
+              - !GetAtt ProgrammesTable.Arn
+              - !GetAtt AuditTable.Arn
+              - !GetAtt TenantsRegistryTable.Arn
+              - !Sub ${WorkspacesTable.Arn}/index/*
+              - !Sub ${ProgrammesTable.Arn}/index/*
+
+Outputs:
+  TenantId:
+    Value: !Ref TenantId
+    Description: The tenant identifier
+  UsersTable:
+    Value: !Ref UsersTable
+  WorkspacesTable:
+    Value: !Ref WorkspacesTable
+  ProgrammesTable:
+    Value: !Ref ProgrammesTable
+  AuditTable:
+    Value: !Ref AuditTable
+  AccessPolicyArn:
+    Value: !Ref LambdaTenantAccessPolicy
+    Description: Attach this policy to the shared AVVA Lambda role
