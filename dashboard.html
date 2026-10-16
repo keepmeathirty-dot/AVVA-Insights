@@ -103,10 +103,11 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .brief-item{display:flex;gap:9px;align-items:flex-start;margin:12px 0;font-size:11px;line-height:1.45}
 .brief-item i{font-style:normal;background:var(--accent-light);padding:6px;border-radius:7px}
 .soft-link{width:100%;border:0;border-radius:7px;background:var(--accent-light);color:var(--accent-primary);padding:7px;font-size:10px;margin-top:5px;cursor:pointer}
-.prog{margin:10px 0;font-size:10px;position:relative}.prog strong{display:block}.prog span{color:#8490a3}
+.prog{margin:10px 0;font-size:10px;position:relative;line-height:1.4;min-height:38px;padding-bottom:2px}.prog strong{display:block;margin-bottom:2px;line-height:1.35}
+.prog span{display:block;line-height:1.3;margin-bottom:2px}.prog span{color:#8490a3}
 .prog-delete{position:absolute;top:0;right:0;background:transparent;border:0;color:#dc2626;cursor:pointer;font-size:14px;padding:2px 6px;opacity:.6}
 .prog-delete:hover{opacity:1}
-.bar-line{height:4px;background:#e9eaf2;margin:3px 0;border-radius:5px;overflow:hidden}
+.bar-line{height:4px;background:#e9eaf2;margin:6px 0 2px;border-radius:5px;overflow:hidden;clear:both}
 .bar-line i{display:block;background:var(--accent-mid);height:100%}
 .bottom{display:grid;grid-template-columns:1.2fr 1.2fr 1.17fr 1fr;gap:10px;margin-top:10px}
 .bottom .panel{min-height:196px}
@@ -985,28 +986,11 @@ function renderCommandCentre(C) {
         currentLayer = L.layerGroup().addTo(map);
       }
 
-      leftovers.forEach((lo, i) => {
-        const d = lo.props;
-        let lat = -28.5, lng = 24.5;
-        if (d.bounds && Array.isArray(d.bounds) && d.bounds.length === 2) {
-          const [[south, west], [north, east]] = d.bounds;
-          lat = (south + north) / 2;
-          lng = (west + east) / 2;
-        } else {
-          const cols = Math.ceil(Math.sqrt(leftovers.length));
-          const row = Math.floor(i / cols);
-          const col = i % cols;
-          lat = -28.0 + (row * 1.2);
-          lng = 24.0 + (col * 1.2);
-        }
-        const maxVal2 = Math.max.apply(null, leftovers.map(l => l.value)) || 1;
-        const radius = 8 + (lo.value / maxVal2) * 24;
-        const colour = getColour(lo.value, min, max);
-        const circle = L.circleMarker([lat, lng], { radius: radius, fillColor: colour, fillOpacity: 0.85, color: '#fff', weight: 1.5 }).addTo(map);
-        circle.bindTooltip('<strong>' + lo.name + '</strong><br>' + lo.value.toLocaleString('en-ZA') + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
-        circle.on('click', () => showDetail(lo.props));
-        currentLayer.addLayer(circle);
-      });
+            // Districts with no matching GeoJSON boundary are skipped
+      // (previously drawn as circles — removed to keep map clean)
+      if (leftovers.length) {
+        console.log('[AVVA] Skipped (no boundary match):', leftovers.map(l => l.name).join(', '));
+      }
 
       if (features.length && currentLayer.getBounds) {
         try { map.fitBounds(currentLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
