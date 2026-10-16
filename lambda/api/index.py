@@ -14,10 +14,39 @@ import jwt
 import boto3
 
 dynamodb = boto3.resource('dynamodb')
-users_table = dynamodb.Table(os.environ['USERS_TABLE'])
-workspaces_table = dynamodb.Table(os.environ['WORKSPACES_TABLE'])
-programmes_table = dynamodb.Table(os.environ['PROGRAMMES_TABLE'])
-audit_table = dynamodb.Table(os.environ['AUDIT_TABLE'])
+tenants_table = dynamodb.Table('avva-tenants')
+
+
+def get_tenant_tables(tenant_id):
+    """Look up tenant's DynamoDB tables from the registry."""
+    if not tenant_id:
+        tenant_id = 'reemerge'
+    try:
+        result = tenants_table.get_item(Key={'id': tenant_id})
+        if 'Item' not in result:
+            # Fallback to default tables
+            return {
+                'users': dynamodb.Table('avva-users-prod'),
+                'workspaces': dynamodb.Table('avva-workspaces-prod'),
+                'programmes': dynamodb.Table('avva-programmes-prod'),
+                'audit': dynamodb.Table('avva-audit-prod')
+            }
+        item = result['Item']
+        tables = item.get('tables', {})
+        return {
+            'users': dynamodb.Table(tables.get('users', 'avva-users-prod')),
+            'workspaces': dynamodb.Table(tables.get('workspaces', 'avva-workspaces-prod')),
+            'programmes': dynamodb.Table(tables.get('programmes', 'avva-programmes-prod')),
+            'audit': dynamodb.Table(tables.get('audit', 'avva-audit-prod'))
+        }
+    except Exception as e:
+        print(f'[ERROR] get_tenant_tables: {e}')
+        return {
+            'users': dynamodb.Table('avva-users-prod'),
+            'workspaces': dynamodb.Table('avva-workspaces-prod'),
+            'programmes': dynamodb.Table('avva-programmes-prod'),
+            'audit': dynamodb.Table('avva-audit-prod')
+        }
 
 JWT_SECRET = os.environ.get('JWT_SECRET', 'change-me')
 JWT_ALGO = 'HS256'
