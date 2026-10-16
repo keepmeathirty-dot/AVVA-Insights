@@ -36,10 +36,7 @@
 .top-title h1{font-size:15px;margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-title p{font-size:11px;color:#71809c;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top-actions{display:flex;gap:10px;align-items:center;position:relative;flex-wrap:wrap;justify-content:flex-end}
-.search-wrap{position:relative}
 .search{height:34px;border:1px solid #e3e8f1;border-radius:8px;padding:0 10px;width:170px;font-size:12px}
-.search-matches{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e3e8f1;border-radius:8px;margin-top:4px;padding:8px;font-size:11px;color:#536382;display:none;box-shadow:0 8px 20px #25305211;z-index:50}
-.search-matches.show{display:block}.search-matches b{color:var(--accent-primary)}
 .circle-button{border:0;background:#fff;font-size:18px;color:#536382}
 .avatar{background:#16b8ad;color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:12px;flex-shrink:0}
 .profile{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;flex-shrink:0}
@@ -189,10 +186,7 @@
       </div>
       <div class="top-title"><h1 id="page-title"></h1><p id="page-subtitle"></p></div>
       <div class="top-actions">
-        <div class="search-wrap">
-          <input class="search" id="search" placeholder="⌕  Search...">
-          <div class="search-matches" id="search-matches"></div>
-        </div>
+        <input class="search" id="search" placeholder="⌕  Search...">
         <button class="circle-button" id="bell">♧</button>
         <div class="profile"><span class="avatar" id="user-initials">DU</span><span id="user-name">Loading…</span></div>
         <button class="role-pill" id="role-pill"><span id="role-label">LOADING</span><span style="opacity:.6;font-size:9px">▾</span></button>
@@ -357,13 +351,13 @@
 
 <script>
 /* ================================================================
-   AVVA INSIGHTS — RENDER ENGINE
-   Auto-login + backend sync for programmes.
+   AVVA INSIGHTS — RENDER ENGINE (tenant-aware)
    ================================================================ */
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
+/* ---- DEMO SESSION ---- */
 const session = {
   email: 'admin@avva.demo',
   name: 'Demo User',
@@ -372,6 +366,35 @@ const session = {
   signedInAt: Date.now()
 };
 
+/* ---- DETECT TENANT FROM URL PATH ---- */
+let currentTenant = null;
+try {
+  const pathParts = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/');
+  const potentialTenantId = pathParts[0];
+  if (potentialTenantId && !potentialTenantId.endsWith('.html')) {
+    if (window.AVVA_TENANTS) {
+      currentTenant = window.AVVA_TENANTS.find(t => t.id === potentialTenantId) || null;
+    }
+  }
+  // Fallback: query param
+  if (!currentTenant) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tid = urlParams.get('tenant');
+    if (tid && window.AVVA_TENANTS) {
+      currentTenant = window.AVVA_TENANTS.find(t => t.id === tid) || null;
+    }
+  }
+  // Final fallback: default to reemerge (platform admin)
+  if (!currentTenant && window.AVVA_TENANTS) {
+    currentTenant = window.AVVA_TENANTS.find(t => t.id === 'reemerge') || window.AVVA_TENANTS[0];
+  }
+} catch (e) {
+  console.warn('[AVVA] Tenant detection failed:', e);
+}
+
+console.log('[AVVA] Active tenant:', currentTenant ? currentTenant.id : 'none');
+
+/* ---- BUILD WORKSPACE LIST ---- */
 const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
   window.AVVA_CSV ? window.AVVA_CSV.list().map(u => ({
     id: u.id, label: u.workspaceName,
@@ -380,64 +403,35 @@ const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
   })) : []
 );
 
-const registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: 'admin' }));
+/* Filter workspaces to those the tenant can access */
+let registry;
+if (currentTenant && currentTenant.workspaces && currentTenant.workspaces.includes('*')) {
+  registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: 'admin' }));
+} else if (currentTenant && currentTenant.workspaces) {
+  registry = allWorkspaces
+    .filter(w => currentTenant.workspaces.includes(w.id))
+    .map(w => Object.assign({}, w, { userRole: 'admin' }));
+} else {
+  registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: 'admin' }));
+}
 
 if (!registry.length) {
-  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif">No workspaces configured.</div>';
+  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No workspaces available for this tenant.</div>';
   throw new Error('No workspaces');
 }
 
-/* ---- TENANT DETECTION ---- */
-const currentTenant = (window.AVVA_detectTenantFromPath && window.AVVA_detectTenantFromPath())
-                   || (window.AVVA_TENANTS && window.AVVA_TENANTS.find(t => t.id === 'reemerge'))
-                   || null;
-
-if (currentTenant) {
-  console.log('[AVVA] Tenant detected:', currentTenant.id, '—', currentTenant.label);
-}
-
-/* Filter registry to tenant's allowed workspaces */
-const tenantRegistry = currentTenant && currentTenant.workspaces.includes('*')
-  ? registry
-  : currentTenant
-    ? registry.filter(w => currentTenant.workspaces.includes(w.id))
-    : registry;
-
-if (!tenantRegistry.length) {
-  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No workspaces available for this tenant: ' + (currentTenant ? currentTenant.id : 'unknown') + '</div>';
-  throw new Error('No tenant workspaces');
-}
-
-/* ---- TENANT DETECTION ---- */
-const currentTenant = (window.AVVA_detectTenantFromPath && window.AVVA_detectTenantFromPath())
-                   || (window.AVVA_TENANTS && window.AVVA_TENANTS.find(t => t.id === 'reemerge'))
-                   || null;
-
-if (currentTenant) {
-  console.log('[AVVA] Tenant detected:', currentTenant.id, '—', currentTenant.label);
-}
-
-const tenantRegistry = currentTenant && currentTenant.workspaces && currentTenant.workspaces.includes('*')
-  ? registry
-  : currentTenant && currentTenant.workspaces
-    ? registry.filter(w => currentTenant.workspaces.includes(w.id))
-    : registry;
-
-if (!tenantRegistry.length) {
-  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No workspaces available for this tenant: ' + (currentTenant ? currentTenant.id : 'unknown') + '</div>';
-  throw new Error('No tenant workspaces');
-}
-
-const params = new URLSearchParams(window.location.search);
-const requestedId = params.get('workspace');
-const activeEntry = tenantRegistry.find(w => w.id === requestedId)
-                 || (currentTenant && tenantRegistry.find(w => w.id === currentTenant.defaultWorkspace))
-                 || tenantRegistry[0];
+/* ---- SELECT ACTIVE WORKSPACE ---- */
+const urlParams = new URLSearchParams(window.location.search);
+const requestedId = urlParams.get('workspace');
+const activeEntry = registry.find(w => w.id === requestedId)
+                 || (currentTenant && registry.find(w => w.id === currentTenant.defaultWorkspace))
+                 || registry[0];
 
 const OVERRIDE = sessionStorage.getItem('avva_role_override_' + activeEntry.id);
 const USER_ROLE = OVERRIDE || 'admin';
 const roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: 'Administrator', hide: [] };
 
+/* ---- CONFIG LOADER ---- */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
@@ -451,33 +445,32 @@ function loadScript(src) {
 let CONFIG = null;
 
 (async function boot() {
-  /* ---- AUTO-LOGIN ---- */
+  /* Auto-login */
   if (!localStorage.getItem('avva_jwt')) {
     try {
       const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
       if (apiEndpoint && apiEndpoint.indexOf('http') === 0) {
-        console.log('[AVVA] No JWT found — attempting auto-login');
         const loginRes = await fetch(apiEndpoint + '/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'admin@avva.demo', password: 'admin123' })
+          body: JSON.stringify({
+            email: 'admin@avva.demo',
+            password: 'admin123',
+            tenantId: currentTenant ? currentTenant.id : 'reemerge'
+          })
         });
         const loginData = await loginRes.json();
         if (loginData.token) {
           localStorage.setItem('avva_jwt', loginData.token);
-          console.log('[AVVA] Auto-login successful');
-        } else {
-          console.warn('[AVVA] Auto-login failed:', loginData.error || 'no token');
+          console.log('[AVVA] Auto-login OK, tenant:', currentTenant ? currentTenant.id : 'reemerge');
         }
       }
     } catch (err) {
-      console.warn('[AVVA] Auto-login error:', err);
+      console.warn('[AVVA] Auto-login failed:', err);
     }
-  } else {
-    console.log('[AVVA] JWT already present');
   }
 
-  /* ---- LOAD WORKSPACE CONFIG ---- */
+  /* Load workspace config */
   const uploaded = window.AVVA_CSV ? window.AVVA_CSV.load(activeEntry.id) : null;
   if (uploaded) {
     CONFIG = uploaded;
@@ -485,7 +478,7 @@ let CONFIG = null;
     return;
   }
   if (!activeEntry.configPath) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace. <a href="dashboard.html" style="color:#4f25d8">← Back</a></div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace. <a href="/dashboard.html" style="color:#4f25d8">← Back</a></div>';
     return;
   }
   try { await loadScript(activeEntry.configPath); }
@@ -501,6 +494,7 @@ let CONFIG = null;
   renderAll(CONFIG);
 })();
 
+/* ---- TOAST ---- */
 const toastEl = $('#toast');
 let toastTimer;
 function toast(msg) {
@@ -510,7 +504,7 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
 }
 
-/* ============== BACKEND PROGRAMMES API ============== */
+/* ---- BACKEND PROGRAMMES ---- */
 function loadProgrammesFromBackend(workspaceId) {
   const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
   const token = localStorage.getItem('avva_jwt');
@@ -521,9 +515,7 @@ function loadProgrammesFromBackend(workspaceId) {
   .then(r => r.json())
   .then(data => {
     const list = data.programmes || [];
-    if (list.length) {
-      localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(list));
-    }
+    if (list.length) localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(list));
     console.log('[AVVA] Loaded', list.length, 'programmes from backend');
     return list;
   })
@@ -533,18 +525,13 @@ function loadProgrammesFromBackend(workspaceId) {
 function saveProgrammeToBackend(workspaceId, programme) {
   const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
   const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
-    console.warn('[AVVA] Cannot save to backend — no endpoint or token');
-    return Promise.resolve(null);
-  }
-  console.log('[AVVA] Saving programme to backend:', programme.name);
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return Promise.resolve(null);
   return fetch(apiEndpoint + '/programmes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify(Object.assign({ workspaceId: workspaceId }, programme))
   })
   .then(r => r.json())
-  .then(data => { console.log('[AVVA] Backend save response:', data); return data; })
   .catch(err => { console.warn('[AVVA] Backend save failed:', err); return null; });
 }
 
@@ -556,11 +543,10 @@ function deleteProgrammeFromBackend(workspaceId, progId) {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify({ workspaceId: workspaceId, id: progId })
-  })
-  .catch(err => { console.warn('[AVVA] Backend delete failed:', err); });
+  }).catch(err => { console.warn('[AVVA] Backend delete failed:', err); });
 }
 
-/* ============== MAIN ============== */
+/* ---- MAIN RENDER ---- */
 function renderAll(C) {
   if (C.accent) {
     document.documentElement.style.setProperty('--accent-primary', C.accent.primary);
@@ -568,14 +554,16 @@ function renderAll(C) {
     document.documentElement.style.setProperty('--accent-mid', C.accent.mid);
   }
 
-  document.title = 'AVVA Insights · ' + C.workspaceName;
-    if (currentTenant) {
+  /* Tenant override for org branding */
+  if (currentTenant) {
     $('#org-name').textContent = currentTenant.shortLabel || currentTenant.label;
-    $('#org-tagline').textContent = 'Viewing as ' + currentTenant.label;
+    $('#org-tagline').textContent = currentTenant.label;
   } else {
     $('#org-name').textContent = (C.org && C.org.name) || 'Reemerge Group';
     $('#org-tagline').textContent = (C.org && C.org.tagline) || 'Making Invisible Markets Visible.';
   }
+
+  document.title = 'AVVA Insights · ' + C.workspaceName;
   $('#workspace-label').textContent = C.workspaceName;
   $('#page-title').textContent = C.pageTitle;
   $('#page-subtitle').textContent = C.pageSubtitle || '';
@@ -600,6 +588,7 @@ function renderAll(C) {
   $('#user-name').innerHTML = 'Demo User<small>Administrator</small>';
   $('#role-label').textContent = roleRules.label.toUpperCase();
 
+  /* Role pill */
   const rolePill = $('#role-pill');
   const roleMenu = document.createElement('div');
   roleMenu.className = 'role-menu';
@@ -631,11 +620,12 @@ function renderAll(C) {
   $('#signout').onclick = function() {
     localStorage.removeItem('avva_session');
     localStorage.removeItem('avva_jwt');
-    window.location.href = 'index.html';
+    window.location.href = '/index.html';
   };
 
-    const menu = $('#workspace-menu');
-  menu.innerHTML = tenantRegistry.map(w =>
+  /* Workspace switcher — only tenant's workspaces */
+  const menu = $('#workspace-menu');
+  menu.innerHTML = registry.map(w =>
     '<button data-ws="' + w.id + '" class="' + (w.id === C.id ? 'active' : '') + '">' +
       '<strong>' + w.label + '</strong><span>' + (w.description || '') + '</span>' +
     '</button>'
@@ -644,7 +634,7 @@ function renderAll(C) {
     b.onclick = function() {
       const id = b.dataset.ws;
       if (id === C.id) { menu.classList.remove('show'); return; }
-      window.location.href = 'dashboard.html?workspace=' + id;
+      window.location.href = 'dashboard.html?workspace=' + id + (currentTenant ? '&tenant=' + currentTenant.id : '');
     };
   });
   $('#workspace-btn').onclick = function(e) { e.stopPropagation(); menu.classList.toggle('show'); };
@@ -654,16 +644,12 @@ function renderAll(C) {
   renderCommandCentre(C);
   setupPostProgramme(C);
 
-  /* ---- Pull programmes from backend ---- */
   loadProgrammesFromBackend(C.id).then(function(list) {
-    if (list && list.length) {
-      console.log('[AVVA] Refreshing programmes panel with', list.length, 'records from backend');
-      renderProgrammes(C);
-    }
+    if (list && list.length) renderProgrammes(C);
   });
 }
 
-/* ============== SIDEBAR ============== */
+/* ---- SIDEBAR ---- */
 function renderSidebar(C) {
   const nav = $('#nav');
   nav.innerHTML = '';
@@ -742,7 +728,7 @@ function activateView(C, item, btn) {
   }
 }
 
-/* ============== COMMAND CENTRE ============== */
+/* ---- COMMAND CENTRE ---- */
 function renderCommandCentre(C) {
   const periodsEl = $('#periods');
   periodsEl.innerHTML = '';
@@ -838,6 +824,7 @@ function renderCommandCentre(C) {
     return '<div class="prog"><strong>' + name + '</strong><span>' + display + ' ' + C.primaryMetricLabel.toLowerCase() + '</span><div class="bar-line"><i style="width:' + ((val / maxVal) * 100).toFixed(0) + '%"></i></div></div>';
   }).join('');
 
+  /* MAP */
   const map = L.map('map', { center: C.map.center, zoom: C.map.zoom, zoomControl: false, scrollWheelZoom: true });
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -931,10 +918,10 @@ function renderCommandCentre(C) {
 
   buildLayer(C.districts, C.primaryMetric);
 
-  const si = $('#search'); const sm = $('#search-matches');
+  const si = $('#search');
   si.oninput = function(e) {
     const q = e.target.value.trim().toLowerCase();
-    if (!q) { if (currentLayer) currentLayer.eachLayer(l => currentLayer.resetStyle && currentLayer.resetStyle(l)); sm.classList.remove('show'); return; }
+    if (!q) { if (currentLayer) currentLayer.eachLayer(l => currentLayer.resetStyle && currentLayer.resetStyle(l)); return; }
     const nms = Object.keys(currentData || {});
     const matches = nms.filter(n => n.toLowerCase().includes(q));
     if (currentLayer) currentLayer.eachLayer(layer => {
@@ -942,11 +929,8 @@ function renderCommandCentre(C) {
       if (matches.includes(nm)) layer.setStyle && layer.setStyle({ fillOpacity:.95, weight:3, color:C.accent.primary });
       else if (layer.setStyle) layer.setStyle({ fillOpacity:.12, weight:1, color:'#cbd5e1' });
     });
-    sm.innerHTML = matches.length ? '<b>' + matches.length + '</b> match' + (matches.length > 1 ? 'es' : '') + ': ' + matches.join(', ') : 'No matches';
-    sm.classList.add('show');
+    if (matches.length) toast(matches.length + ' match' + (matches.length > 1 ? 'es' : '') + ': ' + matches.slice(0, 3).join(', '));
   };
-  si.onblur = function() { setTimeout(() => sm.classList.remove('show'), 200); };
-  si.onfocus = function() { if (si.value.trim()) sm.classList.add('show'); };
 
   document.querySelectorAll('#periods button').forEach(btn => {
     btn.onclick = function() {
@@ -978,7 +962,7 @@ function renderCommandCentre(C) {
   $('#bell').onclick = function() { toast('No live notifications'); };
 }
 
-/* ============== TABLE ============== */
+/* ---- TABLE ---- */
 function renderTable(C, item) {
   try {
     $('#table-title').textContent = item.label;
@@ -1067,7 +1051,7 @@ function renderTable(C, item) {
   }
 }
 
-/* ============== CARDS ============== */
+/* ---- CARDS ---- */
 function renderCards(C, item) {
   $('#cards-title').textContent = item.label;
   $('#cards-sub').textContent = item.subtitle || ('Content for ' + C.workspaceName);
@@ -1138,7 +1122,7 @@ function renderCards(C, item) {
   };
 }
 
-/* ============== INFO ============== */
+/* ---- INFO ---- */
 function renderInfo(C, item) {
   $('#info-title').textContent = item.label;
   $('#info-sub').textContent = item.subtitle || (item.label + ' for ' + C.workspaceName);
@@ -1153,7 +1137,7 @@ function renderInfo(C, item) {
   $('#info-body').innerHTML = bodies[item.id] || '<h3>' + item.label + '</h3><p>Part of AVVA Insights.</p>';
 }
 
-/* ============== BOTTOM LEFT ============== */
+/* ---- BOTTOM LEFT ---- */
 function renderBottomLeft(C) {
   const bl = C.bottomLeft;
   if (!bl) return;
@@ -1171,7 +1155,7 @@ function renderBottomLeft(C) {
   }
 }
 
-/* ============== PROGRAMMES ============== */
+/* ---- PROGRAMMES ---- */
 function getPostedProgrammes(workspaceId) {
   try {
     const raw = localStorage.getItem('avva_programmes_' + workspaceId);
@@ -1294,7 +1278,7 @@ function setupPostProgramme(C) {
 
 function openPostPanel() { if (window.__avva_openPostPanel) window.__avva_openPostPanel(); }
 
-/* ============== CHAT ============== */
+/* ---- CHAT ---- */
 let chatHistory = [];
 function renderChatView(C) {
   const input = document.getElementById('chat-input');
@@ -1337,7 +1321,7 @@ async function sendChatMessage(C) {
   chatHistory.push({ role: 'assistant', content: reply });
 }
 
-/* ============== UPLOAD ============== */
+/* ---- UPLOAD ---- */
 let __parsedCSV = null;
 let __pendingConfig = null;
 
@@ -1398,7 +1382,11 @@ function handleGenerate(C) {
   if (!__pendingConfig) { toast('No parsed data'); return; }
   if (!window.AVVA_CSV.save(__pendingConfig)) { toast('Could not save'); return; }
   toast('✓ Workspace generated');
-  setTimeout(() => { window.location.href = 'dashboard.html?workspace=' + __pendingConfig.id; }, 600);
+  setTimeout(() => {
+    const wsParam = 'workspace=' + __pendingConfig.id;
+    const tenantParam = currentTenant ? '&tenant=' + currentTenant.id : '';
+    window.location.href = 'dashboard.html?' + wsParam + tenantParam;
+  }, 600);
 }
 
 function renderUploadsView(C) {
@@ -1418,7 +1406,8 @@ function renderUploadsView(C) {
   grid.querySelectorAll('.card-item').forEach(card => {
     card.onclick = function(e) {
       if (e.target.classList.contains('card-delete')) return;
-      window.location.href = 'dashboard.html?workspace=' + card.dataset.uploadId;
+      const tenantParam = currentTenant ? '&tenant=' + currentTenant.id : '';
+      window.location.href = 'dashboard.html?workspace=' + card.dataset.uploadId + tenantParam;
     };
   });
   grid.querySelectorAll('.card-delete').forEach(btn => {
