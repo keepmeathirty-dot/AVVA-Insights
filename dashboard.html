@@ -342,6 +342,21 @@
 
 <script src="configs/registry.js"></script>
 <script src="configs/tenants.js"></script>
+<script>
+window.AVVA_TENANTS = [
+  { id: "kzndoa", label: "KZN Dept. of Agriculture", shortLabel: "KZN DoA", status: "active", workspaces: ["kzn-doa"], defaultWorkspace: "kzn-doa", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#4f25d8" }, plan: "enterprise", createdAt: "2026-01-01" },
+  { id: "tigerbrands", label: "Tiger Brands", shortLabel: "Tiger Brands", status: "active", workspaces: ["fmcg-intelligence"], defaultWorkspace: "fmcg-intelligence", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#ea580c" }, plan: "enterprise", createdAt: "2026-10-15" },
+  { id: "hennessy", label: "Hennessy", shortLabel: "Hennessy", status: "active", workspaces: ["hennessy"], defaultWorkspace: "hennessy", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#b8860b" }, plan: "enterprise", createdAt: "2026-10-01" },
+  { id: "reemerge", label: "Reemerge Group — Platform Admin", shortLabel: "Platform", status: "active", workspaces: ["*"], defaultWorkspace: "kzn-doa", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#4f25d8" }, plan: "platform", createdAt: "2026-01-01" }
+];
+window.AVVA_detectTenantFromPath = function() {
+  var path = window.location.pathname.replace(/^\/+/, '');
+  var segments = path.split('/');
+  if (!segments[0] || segments[0].endsWith('.html')) return null;
+  return window.AVVA_TENANTS.find(function(t){ return t.id === segments[0]; }) || null;
+};
+console.log('[AVVA] Tenants inlined:', window.AVVA_TENANTS.length);
+</script>
 <script src="configs/accounts.js"></script>
 <script src="configs/ai.js"></script>
 <script src="configs/csv-uploader.js"></script>
@@ -366,32 +381,7 @@ const session = {
   signedInAt: Date.now()
 };
 
-/* ---- DETECT TENANT FROM URL PATH ---- */
-let currentTenant = null;
-try {
-  const pathParts = window.location.pathname.replace(/^\/+|\/+$/g, '').split('/');
-  const potentialTenantId = pathParts[0];
-  if (potentialTenantId && !potentialTenantId.endsWith('.html')) {
-    if (window.AVVA_TENANTS) {
-      currentTenant = window.AVVA_TENANTS.find(t => t.id === potentialTenantId) || null;
-    }
-  }
-  // Fallback: query param
-  if (!currentTenant) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tid = urlParams.get('tenant');
-    if (tid && window.AVVA_TENANTS) {
-      currentTenant = window.AVVA_TENANTS.find(t => t.id === tid) || null;
-    }
-  }
-  // Final fallback: default to reemerge (platform admin)
-  if (!currentTenant && window.AVVA_TENANTS) {
-    currentTenant = window.AVVA_TENANTS.find(t => t.id === 'reemerge') || window.AVVA_TENANTS[0];
-  }
-} catch (e) {
-  console.warn('[AVVA] Tenant detection failed:', e);
-}
-
+const currentTenant = window.AVVA_detectTenantFromPath ? window.AVVA_detectTenantFromPath() : (window.AVVA_TENANTS ? window.AVVA_TENANTS.find(t => t.id === 'reemerge') : null);
 console.log('[AVVA] Active tenant:', currentTenant ? currentTenant.id : 'none');
 
 /* ---- BUILD WORKSPACE LIST ---- */
