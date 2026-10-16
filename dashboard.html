@@ -8,7 +8,6 @@
 <style>
 :root{--accent-primary:#4f25d8;--accent-light:#f0eeff;--accent-mid:#6845e8;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color:#16213d;background:#f8faff;font-size:14px}
 *{box-sizing:border-box}body{margin:0}button,input,textarea,select{font:inherit}button{cursor:pointer}
-button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--accent-mid);outline-offset:2px}
 .app{display:grid;grid-template-columns:228px minmax(0,1fr);min-height:100vh}
 .sidebar{background:#fff;border-right:1px solid #e9ecf5;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:25px 12px 12px;z-index:5}
 .brand{font-size:30px;letter-spacing:.17em;line-height:.85;margin:3px 14px 36px;font-weight:300;color:#111a35}
@@ -17,7 +16,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .nav button{background:transparent;border:0;text-align:left;color:#344260;padding:11px 13px;min-height:40px;border-radius:9px;display:flex;align-items:center;gap:12px;font-weight:550;position:relative}
 .nav button:hover,.nav button.active{background:var(--accent-light);color:var(--accent-primary)}
 .nav .ico{width:19px;text-align:center;color:inherit;font-size:17px}
-.nav .badge{margin-left:auto;background:#ef4444;color:#fff;font-size:9px;padding:2px 6px;border-radius:8px;font-weight:700}
 .section-label{font-size:10px;color:#7888a9;letter-spacing:.11em;font-weight:800;margin:22px 14px 7px}
 .sidebar-bottom{margin-top:auto;border:1px solid #e9ecf4;border-radius:11px;padding:13px;background:#fcfdff}
 .sidebar-bottom b{display:block;margin-bottom:5px}.sidebar-bottom span{font-size:12px;color:#71809c}
@@ -27,7 +25,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .workspace-switch i{font-style:normal;font-size:20px;color:var(--accent-primary);background:var(--accent-light);border-radius:8px;padding:4px;flex-shrink:0}
 .workspace-switch small{display:block;color:#60708b;font-size:11px}
 .workspace-switch strong{display:block;font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.workspace-menu{position:absolute;top:100%;left:0;margin-top:6px;background:#ffffff;border:1px solid #e5e9f2;border-radius:10px;box-shadow:0 12px 32px rgba(37,48,82,0.15);padding:6px;min-width:300px;max-height:420px;overflow-y:auto;display:none;z-index:9999;isolation:isolate}
+.workspace-menu{position:absolute;top:100%;left:0;margin-top:6px;background:#ffffff;border:1px solid #e5e9f2;border-radius:10px;box-shadow:0 12px 32px rgba(37,48,82,0.15);padding:6px;min-width:300px;max-height:420px;overflow-y:auto;display:none;z-index:9999}
 .workspace-menu.show{display:block}
 .workspace-menu button{display:block;width:100%;background:transparent;border:0;text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer}
 .workspace-menu button:hover,.workspace-menu button.active{background:var(--accent-light)}
@@ -41,7 +39,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .search{height:34px;border:1px solid #e3e8f1;border-radius:8px;padding:0 10px;width:170px;font-size:12px}
 .search-matches{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e3e8f1;border-radius:8px;margin-top:4px;padding:8px;font-size:11px;color:#536382;display:none;box-shadow:0 8px 20px #25305211;z-index:50}
 .search-matches.show{display:block}.search-matches b{color:var(--accent-primary)}
-.circle-button{border:0;background:#fff;font-size:18px;color:#536382;position:relative}
+.circle-button{border:0;background:#fff;font-size:18px;color:#536382}
 .avatar{background:#16b8ad;color:#fff;border-radius:50%;width:32px;height:32px;display:grid;place-items:center;font-size:12px;flex-shrink:0}
 .profile{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:12px;flex-shrink:0}
 .profile small{display:block;color:#71809c}
@@ -75,9 +73,6 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .map-layers-inline{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:#364560;margin-top:6px}
 .map-layers-inline label{display:flex;gap:5px;align-items:center;cursor:pointer}
 .map-layers-inline input{accent-color:var(--accent-mid)}
-.geo-toggle{display:flex;border:1px solid #e9ecf3;border-radius:9px;padding:3px;gap:2px;font-size:11px;margin-top:6px}
-.geo-toggle button{border:0;background:transparent;padding:5px 9px;border-radius:6px;color:#394760;font-size:11px;cursor:pointer}
-.geo-toggle button.active{background:var(--accent-light);color:var(--accent-primary)}
 .map-wrap{position:relative;flex:1;min-height:0;overflow:hidden;margin-top:8px;z-index:1}
 #map,#map-full{position:absolute;inset:0;border-radius:8px;background:#f0f4ff;z-index:1}
 .leaflet-pane,.leaflet-top,.leaflet-bottom{z-index:auto !important}
@@ -103,11 +98,12 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .brief-item{display:flex;gap:9px;align-items:flex-start;margin:12px 0;font-size:11px;line-height:1.45}
 .brief-item i{font-style:normal;background:var(--accent-light);padding:6px;border-radius:7px}
 .soft-link{width:100%;border:0;border-radius:7px;background:var(--accent-light);color:var(--accent-primary);padding:7px;font-size:10px;margin-top:5px;cursor:pointer}
-.prog{margin:10px 0;font-size:10px;position:relative;line-height:1.4;min-height:38px;padding-bottom:2px}.prog strong{display:block;margin-bottom:2px;line-height:1.35}
-.prog span{display:block;line-height:1.3;margin-bottom:2px}.prog span{color:#8490a3}
+.prog{margin:0 0 14px 0;font-size:11px;position:relative;line-height:1.4;overflow:hidden}
+.prog strong{display:block;margin-bottom:3px;line-height:1.35;font-size:11px}
+.prog span{display:block;line-height:1.35;margin-bottom:4px;color:#8490a3;font-size:10px}
 .prog-delete{position:absolute;top:0;right:0;background:transparent;border:0;color:#dc2626;cursor:pointer;font-size:14px;padding:2px 6px;opacity:.6}
 .prog-delete:hover{opacity:1}
-.bar-line{height:4px;background:#e9eaf2;margin:6px 0 2px;border-radius:5px;overflow:hidden;clear:both}
+.bar-line{height:5px;background:#e9eaf2;margin:0;border-radius:5px;overflow:hidden;clear:both}
 .bar-line i{display:block;background:var(--accent-mid);height:100%}
 .bottom{display:grid;grid-template-columns:1.2fr 1.2fr 1.17fr 1fr;gap:10px;margin-top:10px}
 .bottom .panel{min-height:196px}
@@ -178,14 +174,13 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 .foot{display:flex;justify-content:space-between;gap:10px;font-size:10px;color:#77859e;padding:14px 2px}
 .toast{position:fixed;right:18px;bottom:18px;background:#172243;color:white;padding:11px 15px;border-radius:9px;box-shadow:0 12px 35px #1118;z-index:2000;display:none}
 .toast.show{display:block}
-.leaflet-popup-content{font-size:12px;line-height:1.5}
 .empty-state{text-align:center;padding:60px 20px;color:#94a3b8;font-size:13px}
 @media(max-width:1350px){.metrics{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr)}.right{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr}.bottom{grid-template-columns:repeat(2,1fr)}#user-name{display:none}}
 @media(max-width:900px){.app{display:block}.sidebar{position:fixed;left:0;transform:translateX(-100%);transition:transform .2s;width:228px;box-shadow:12px 0 30px #0b174122}.sidebar.open{transform:translateX(0)}.topbar{padding:0 14px}.workspace-switch{min-width:0}.top-title{display:none}.content{padding:14px}.search{width:140px}.grid{grid-template-columns:1fr}.right{grid-column:auto}.map-panel,.zoom-panel{height:480px}.field-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="app">
+  <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">AVVA<small>INSIGHTS</small></div>
     <nav class="nav" id="nav" aria-label="Main navigation"></nav>
@@ -470,17 +465,24 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <script src="configs/geo-resolver.js"></script>
 <script src="configs/api.js"></script>
 <script>
+/* ================================================================
+   AVVA INSIGHTS — RENDER ENGINE
+   No session gate. Loads config from URL parameter or default.
+   ================================================================ */
+
 const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-/* ================= SESSION GATE ================= */
-const sessionRaw = localStorage.getItem('avva_session');
-if (!sessionRaw) { //window.location.href = 'login.html'; throw new Error('No session'); }
-let session;
-try { session = JSON.parse(sessionRaw); }
-catch (e) { //window.location.href = 'login.html'; throw e; }
+/* Demo session */
+const session = {
+  email: 'demo@avva.demo',
+  name: 'Demo User',
+  role: 'Platform Admin',
+  workspaces: { '*': 'admin' },
+  signedInAt: Date.now()
+};
 
-/* ================= BUILD ACCESSIBLE WORKSPACE LIST ================= */
+/* Build workspace list */
 const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
   window.AVVA_CSV ? window.AVVA_CSV.list().map(u => ({
     id: u.id,
@@ -491,41 +493,30 @@ const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
   })) : []
 );
 
-let registry;
-if (session.workspaces && session.workspaces["*"]) {
-  registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: session.workspaces["*"] }));
-} else if (session.workspaces) {
-  registry = allWorkspaces
-    .filter(w => session.workspaces[w.id])
-    .map(w => Object.assign({}, w, { userRole: session.workspaces[w.id] }));
-} else {
-  registry = allWorkspaces;
-}
+const registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: 'admin' }));
 
 if (!registry.length) {
-  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Your account has no workspace access.</div>';
-  throw new Error('No workspace access');
+  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No workspaces configured.</div>';
+  throw new Error('No workspaces');
 }
 
-/* ================= SELECT ACTIVE WORKSPACE ================= */
+/* Select workspace from URL */
 const params = new URLSearchParams(window.location.search);
-const requestedId = params.get("workspace");
+const requestedId = params.get('workspace');
 const activeEntry = registry.find(w => w.id === requestedId)
                  || registry.find(w => w.default)
                  || registry[0];
 
-/* ================= ACTIVE USER ROLE ================= */
-const OVERRIDE = sessionStorage.getItem('avva_role_override_' + activeEntry.id);
-const USER_ROLE = OVERRIDE || activeEntry.userRole || "viewer";
-const roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: "Viewer", hide: [] };
+const USER_ROLE = 'admin';
+const roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: 'Administrator', hide: [] };
 
-/* ================= CONFIG LOADER ================= */
+/* Load config */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
+    const s = document.createElement('script');
     s.src = src;
     s.onload = resolve;
-    s.onerror = () => reject(new Error("Failed to load " + src));
+    s.onerror = () => reject(new Error('Failed to load ' + src));
     document.head.appendChild(s);
   });
 }
@@ -536,30 +527,27 @@ let CONFIG = null;
   const uploaded = window.AVVA_CSV ? window.AVVA_CSV.load(activeEntry.id) : null;
   if (uploaded) {
     CONFIG = uploaded;
-    console.log('[AVVA] Loaded uploaded workspace:', CONFIG.id);
-    localStorage.setItem('avva_last_workspace', CONFIG.id);
     renderAll(CONFIG);
     return;
   }
   if (!activeEntry.configPath) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace. It may not be loaded yet. <br><br><a href="dashboard.html" style="color:#4f25d8">← Return to default workspace</a></div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace.</div>';
     return;
   }
   try { await loadScript(activeEntry.configPath); }
   catch (err) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ' + activeEntry.configPath + '<br><br><a href="dashboard.html" style="color:#4f25d8">← Return to default workspace</a></div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ' + activeEntry.configPath + '</div>';
     return;
   }
   CONFIG = window.AVVA_CONFIG;
   if (!CONFIG) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined. The workspace may be misconfigured.</div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined.</div>';
     return;
   }
-  localStorage.setItem('avva_last_workspace', CONFIG.id);
   renderAll(CONFIG);
 })();
 
-/* ================= TOAST ================= */
+/* Toast */
 const toastEl = $('#toast');
 let toastTimer;
 function toast(msg) {
@@ -569,69 +557,7 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
 }
 
-/* ================= PROGRAMMES ================= */
-function getPostedProgrammes(workspaceId) {
-  try {
-    const raw = localStorage.getItem('avva_programmes_' + workspaceId);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) { return []; }
-}
-
-function savePostedProgrammes(workspaceId, arr) {
-  try { localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(arr)); return true; }
-  catch (err) { return false; }
-}
-
-function loadProgrammesFromBackend(workspaceId) {
-  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
-  const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
-    return Promise.resolve([]);
-  }
-  return fetch(apiEndpoint + '/programmes?workspaceId=' + encodeURIComponent(workspaceId), {
-    headers: { 'Authorization': 'Bearer ' + token }
-  })
-  .then(function(res) { return res.json(); })
-  .then(function(data) {
-    const list = data.programmes || [];
-    localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(list));
-    return list;
-  })
-  .catch(function(err) {
-    console.warn('[AVVA] Backend programmes load failed:', err);
-    return [];
-  });
-}
-
-function saveProgrammeToBackend(workspaceId, programme) {
-  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
-  const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
-    return Promise.resolve(null);
-  }
-  return fetch(apiEndpoint + '/programmes', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify(Object.assign({ workspaceId: workspaceId }, programme))
-  })
-  .then(function(res) { return res.json(); })
-  .catch(function(err) { console.warn('[AVVA] Backend save failed:', err); });
-}
-
-function deleteProgrammeFromBackend(workspaceId, progId) {
-  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
-  const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return;
-  fetch(apiEndpoint + '/programmes', {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-    body: JSON.stringify({ workspaceId: workspaceId, id: progId })
-  }).catch(function(err) { console.warn('[AVVA] Backend delete failed:', err); });
-}
-
-/* ================= MAIN RENDER ================= */
+/* ============== MAIN RENDER ============== */
 function renderAll(C) {
   if (C.accent) {
     document.documentElement.style.setProperty('--accent-primary', C.accent.primary);
@@ -662,14 +588,12 @@ function renderAll(C) {
   $('#quality-sub').textContent = C.quality.subtitle;
   $('#top-list-title').textContent = 'Top Regions by ' + C.primaryMetricLabel;
 
-  $('#user-initials').textContent = (session.name || 'U').split(' ').map(s => s[0]).slice(0,2).join('').toUpperCase();
-  $('#user-name').innerHTML = session.name + '<small>' + session.role + '</small>';
-
-  /* Role pill + demo switcher */
+  $('#user-initials').textContent = 'DU';
+  $('#user-name').innerHTML = 'Demo User<small>Administrator</small>';
   $('#role-label').textContent = roleRules.label.toUpperCase();
+
+  /* Role pill menu */
   const rolePill = $('#role-pill');
-  const existingMenu = rolePill.querySelector('.role-menu');
-  if (existingMenu) existingMenu.remove();
   const roleMenu = document.createElement('div');
   roleMenu.className = 'role-menu';
   roleMenu.innerHTML = '<div class="hint">DEMO · PREVIEW AS ROLE</div>' +
@@ -714,7 +638,6 @@ function renderAll(C) {
     b.onclick = function() {
       const id = b.dataset.ws;
       if (id === C.id) { menu.classList.remove('show'); return; }
-      localStorage.setItem('avva_last_workspace', id);
       window.location.href = 'dashboard.html?workspace=' + id;
     };
   });
@@ -724,17 +647,9 @@ function renderAll(C) {
   renderSidebar(C);
   renderCommandCentre(C);
   setupPostProgramme(C);
-
-  /* Pull programmes from backend */
-  loadProgrammesFromBackend(C.id).then(function(list) {
-    if (list && list.length) {
-      console.log('[AVVA] Loaded', list.length, 'programmes from backend');
-      renderProgrammes(C);
-    }
-  });
 }
 
-/* ================= SIDEBAR ================= */
+/* ============== SIDEBAR ============== */
 function renderSidebar(C) {
   const nav = $('#nav');
   nav.innerHTML = '';
@@ -818,7 +733,7 @@ function activateView(C, item, btn) {
   }
 }
 
-/* ================= COMMAND CENTRE ================= */
+/* ============== COMMAND CENTRE ============== */
 function renderCommandCentre(C) {
   const periodsEl = $('#periods');
   periodsEl.innerHTML = '';
@@ -912,7 +827,7 @@ function renderCommandCentre(C) {
   const maxVal = sorted.length ? (sorted[0][1][primaryKey] || 1) : 1;
   $('#top-districts').innerHTML = sorted.slice(0, 5).map(([name, d]) => {
     const val = d[primaryKey] || 0;
-    const display = (primaryKey === 'revenue' || primaryKey === 'funding' || primaryKey.indexOf('rands') > -1) ? fmtCurrencyM(val) : fmtNumber(val);
+    const display = (primaryKey.indexOf('rands') > -1 || primaryKey === 'revenue' || primaryKey === 'funding') ? fmtCurrencyM(val) : fmtNumber(val);
     return '<div class="prog"><strong>' + name + '</strong><span>' + display + ' ' + C.primaryMetricLabel.toLowerCase() + '</span><div class="bar-line"><i style="width:' + ((val / maxVal) * 100).toFixed(0) + '%"></i></div></div>';
   }).join('');
 
@@ -945,62 +860,7 @@ function renderCommandCentre(C) {
     const min = Math.min.apply(null, values);
     const max = Math.max.apply(null, values);
 
-    const level = (window.AVVA_SA_LOOKUP ? window.AVVA_SA_LOOKUP.detectLevel(nms) : 'district');
-
-    if (!window.AVVA_GEO) {
-      drawRectFallback(dataObj, metricKey, min, max);
-      return;
-    }
-
-    window.AVVA_GEO.load(level).then(() => {
-      const features = [];
-      const leftovers = [];
-      nms.forEach(name => {
-        const d = dataObj[name];
-        const props = Object.assign({ name: name }, d);
-        const match = window.AVVA_GEO.findMatch(level, name);
-        if (match) features.push({ type: 'Feature', properties: props, geometry: match.geometry });
-        else leftovers.push({ name: name, props: props, value: d[metricKey] || 0 });
-      });
-
-      if (currentLayer) map.removeLayer(currentLayer);
-      if (features.length) {
-        currentLayer = L.geoJSON({ type: 'FeatureCollection', features: features }, {
-          style: f => ({
-            fillColor: getColour(f.properties[metricKey] || 0, min, max),
-            weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78
-          }),
-          onEachFeature: (f, layer) => {
-            const p = f.properties;
-            const val = p[metricKey] || 0;
-            const valDisplay = (metricKey.indexOf('rands') > -1 || metricKey === 'revenue' || metricKey === 'funding') ? fmtCurrencyM(val) : fmtNumber(val);
-            layer.bindTooltip('<strong>' + p.name + '</strong><br>' + valDisplay + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
-            layer.on({
-              mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
-              mouseout: e => currentLayer.resetStyle(e.target),
-              click: () => showDetail(p)
-            });
-          }
-        }).addTo(map);
-      } else {
-        currentLayer = L.layerGroup().addTo(map);
-      }
-
-            // Districts with no matching GeoJSON boundary are skipped
-      // (previously drawn as circles — removed to keep map clean)
-      if (leftovers.length) {
-        console.log('[AVVA] Skipped (no boundary match):', leftovers.map(l => l.name).join(', '));
-      }
-
-      if (features.length && currentLayer.getBounds) {
-        try { map.fitBounds(currentLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
-      }
-      currentData = dataObj;
-    });
-  }
-
-  function drawRectFallback(dataObj, metricKey, min, max) {
-    const nms = Object.keys(dataObj);
+    // Draw rectangles (no GeoJSON dependency — instant, reliable)
     const features = nms.map(name => {
       const d = dataObj[name];
       const bounds = d.bounds || [[-29.5, 30.0], [-28.5, 31.0]];
@@ -1011,15 +871,27 @@ function renderCommandCentre(C) {
         geometry: { type: 'Polygon', coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]] }
       };
     });
+
     if (currentLayer) map.removeLayer(currentLayer);
     currentLayer = L.geoJSON({ type: 'FeatureCollection', features: features }, {
-      style: f => ({ fillColor: getColour(f.properties[metricKey] || 0, min, max), weight: 1.5, opacity: .9, color: '#fff', fillOpacity: .78 }),
+      style: f => ({
+        fillColor: getColour(f.properties[metricKey] || 0, min, max),
+        weight: 1.5, opacity: .9, color: '#fff', fillOpacity: .8
+      }),
       onEachFeature: (f, layer) => {
         const p = f.properties;
-        layer.bindTooltip('<strong>' + p.name + '</strong>', { sticky: true });
-        layer.on('click', () => showDetail(p));
+        const val = p[metricKey] || 0;
+        const valDisplay = (metricKey.indexOf('rands') > -1 || metricKey === 'revenue' || metricKey === 'funding') ? fmtCurrencyM(val) : fmtNumber(val);
+        layer.bindTooltip('<strong>' + p.name + '</strong><br>' + valDisplay + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
+        layer.on({
+          mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .95 }),
+          mouseout: e => currentLayer.resetStyle(e.target),
+          click: () => showDetail(p)
+        });
       }
     }).addTo(map);
+
+    try { map.fitBounds(currentLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
     currentData = dataObj;
   }
 
@@ -1037,19 +909,6 @@ function renderCommandCentre(C) {
 
   buildLayer(C.districts, C.primaryMetric);
 
-  const gt = $('#geo-toggle');
-  if (C.geoScope === 'both' && C.provinces) {
-    gt.style.display = 'flex';
-    gt.querySelectorAll('button').forEach(b => {
-      b.onclick = function() {
-        gt.querySelectorAll('button').forEach(x => x.classList.remove('active'));
-        b.classList.add('active');
-        if (b.dataset.geo === 'provinces') { buildLayer(C.provinces, currentMetric); map.setView([-29.0, 24.0], 5); }
-        else { buildLayer(C.districts, currentMetric); map.setView(C.map.center, C.map.zoom); }
-      };
-    });
-  }
-
   const si = $('#search'); const sm = $('#search-matches');
   si.oninput = function(e) {
     const q = e.target.value.trim().toLowerCase();
@@ -1058,8 +917,8 @@ function renderCommandCentre(C) {
     const matches = nms.filter(n => n.toLowerCase().includes(q));
     if (currentLayer) currentLayer.eachLayer(layer => {
       const nm = layer.feature && layer.feature.properties ? layer.feature.properties.name : '';
-      if (matches.includes(nm)) layer.setStyle && layer.setStyle({ fillOpacity:.95, weight:3, color:C.accent.primary, opacity:1 });
-      else if (layer.setStyle) layer.setStyle({ fillOpacity:.12, weight:1, color:'#cbd5e1', opacity:.6 });
+      if (matches.includes(nm)) layer.setStyle && layer.setStyle({ fillOpacity:.95, weight:3, color:C.accent.primary });
+      else if (layer.setStyle) layer.setStyle({ fillOpacity:.12, weight:1, color:'#cbd5e1' });
     });
     sm.innerHTML = matches.length ? '<b>' + matches.length + '</b> match' + (matches.length > 1 ? 'es' : '') + ': ' + matches.join(', ') : 'No matches';
     sm.classList.add('show');
@@ -1089,16 +948,15 @@ function renderCommandCentre(C) {
       }
       if (targetMetric) {
         currentMetric = targetMetric.id;
-        console.log('[AVVA] Layer switch:', layerId, '→ metric:', targetMetric.id);
         buildLayer(currentData || C.districts, targetMetric.id);
       }
     };
   });
 
-  $('#bell').onclick = function() { toast('No live notifications in this prototype'); };
+  $('#bell').onclick = function() { toast('No live notifications'); };
 }
 
-/* ================= FULL-WIDTH MAP ================= */
+/* ============== FULL MAP ============== */
 let fullMapInstance = null;
 let fullMapLayer = null;
 
@@ -1154,38 +1012,34 @@ function renderFullMap(C, item) {
     if (!nms.length) return;
     const values = nms.map(n => dataObj[n][metricKey] || 0);
     const min = Math.min.apply(null, values); const max = Math.max.apply(null, values);
-    const level = (window.AVVA_SA_LOOKUP ? window.AVVA_SA_LOOKUP.detectLevel(nms) : 'district');
 
-    if (!window.AVVA_GEO) return;
-
-    window.AVVA_GEO.load(level).then(() => {
-      const features = [];
-      nms.forEach(name => {
-        const d = dataObj[name];
-        const props = Object.assign({ name: name }, d);
-        const match = window.AVVA_GEO.findMatch(level, name);
-        if (match) features.push({ type: 'Feature', properties: props, geometry: match.geometry });
-      });
-      if (fullMapLayer) fullMapInstance.removeLayer(fullMapLayer);
-      if (features.length) {
-        fullMapLayer = L.geoJSON({ type: 'FeatureCollection', features: features }, {
-          style: f => ({ fillColor: getColour(f.properties[metricKey] || 0, min, max), weight: 1.2, opacity: .9, color: '#fff', fillOpacity: .78 }),
-          onEachFeature: (f, layer) => {
-            const p = f.properties;
-            const val = p[metricKey] || 0;
-            const display = (metricKey.indexOf('rands') > -1 || metricKey === 'revenue' || metricKey === 'funding') ? 'R' + (val/1_000_000).toFixed(1) + 'm' : val.toLocaleString('en-ZA');
-            layer.bindTooltip('<strong>' + p.name + '</strong><br>' + display + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
-            layer.on({
-              mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
-              mouseout: e => fullMapLayer.resetStyle(e.target)
-            });
-          }
-        }).addTo(fullMapInstance);
-        try { fullMapInstance.fitBounds(fullMapLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
-      } else {
-        fullMapLayer = L.layerGroup().addTo(fullMapInstance);
-      }
+    const features = nms.map(name => {
+      const d = dataObj[name];
+      const bounds = d.bounds || [[-29.5, 30.0], [-28.5, 31.0]];
+      const [[south, west], [north, east]] = bounds;
+      return {
+        type: 'Feature',
+        properties: Object.assign({ name: name }, d),
+        geometry: { type: 'Polygon', coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]] }
+      };
     });
+
+    if (fullMapLayer) fullMapInstance.removeLayer(fullMapLayer);
+    fullMapLayer = L.geoJSON({ type: 'FeatureCollection', features: features }, {
+      style: f => ({ fillColor: getColour(f.properties[metricKey] || 0, min, max), weight: 1.5, opacity: .9, color: '#fff', fillOpacity: .8 }),
+      onEachFeature: (f, layer) => {
+        const p = f.properties;
+        const val = p[metricKey] || 0;
+        const display = (metricKey.indexOf('rands') > -1 || metricKey === 'revenue' || metricKey === 'funding') ? 'R' + (val/1_000_000).toFixed(1) + 'm' : val.toLocaleString('en-ZA');
+        layer.bindTooltip('<strong>' + p.name + '</strong><br>' + display + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
+        layer.on({
+          mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .95 }),
+          mouseout: e => fullMapLayer.resetStyle(e.target)
+        });
+      }
+    }).addTo(fullMapInstance);
+
+    try { fullMapInstance.fitBounds(fullMapLayer.getBounds(), { padding: [20, 20] }); } catch(e){}
   }
 
   drawLayer(C.districts, C.primaryMetric);
@@ -1206,7 +1060,7 @@ function renderFullMap(C, item) {
   });
 }
 
-/* ================= CHAT ================= */
+/* ============== CHAT ============== */
 let chatHistory = [];
 
 function renderChatView(C) {
@@ -1239,15 +1093,6 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
 }
 
-function buildWorkspaceContext(C) {
-  const districts = Object.keys(C.districts || {}).slice(0, 5);
-  const totals = {};
-  Object.values(C.districts || {}).forEach(d => {
-    for (const k in d) if (typeof d[k] === 'number') totals[k] = (totals[k] || 0) + d[k];
-  });
-  return 'Workspace: ' + C.workspaceName + '\nSector: ' + ((C.sectors || []).join(', ')) + '\nDistricts: ' + Object.keys(C.districts || {}).length + '\nTop: ' + districts.join(', ') + '\nTotals: ' + JSON.stringify(totals);
-}
-
 function getDemoResponse(text, C) {
   const cfg = window.AVVA_AI_CONFIG || {};
   const demo = cfg.demoResponses || {};
@@ -1266,39 +1111,13 @@ async function sendChatMessage(C) {
   appendChatMsg('user', text);
   chatHistory.push({ role: 'user', content: text });
   input.value = '';
-  const container = document.getElementById('chat-messages');
-  const typing = document.createElement('div');
-  typing.className = 'chat-msg ai';
-  typing.id = 'typing-indicator';
-  typing.innerHTML = '<div class="who">AI</div><div class="bubble">…</div>';
-  container.appendChild(typing);
-  container.scrollTop = container.scrollHeight;
-
-  const cfg = window.AVVA_AI_CONFIG || {};
-  try {
-    let reply;
-    if (cfg.demoMode || !cfg.proxyEndpoint || cfg.proxyEndpoint === '__AWS_LAMBDA_ENDPOINT__') {
-      await new Promise(r => setTimeout(r, 600));
-      reply = getDemoResponse(text, C);
-    } else {
-      const res = await fetch(cfg.proxyEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: chatHistory.slice(-10), context: buildWorkspaceContext(C), systemPrompt: cfg.systemPromptTemplate })
-      });
-      const data = await res.json();
-      reply = data.reply || data.error || 'No response from AI.';
-    }
-    typing.remove();
-    appendChatMsg('ai', reply);
-    chatHistory.push({ role: 'assistant', content: reply });
-  } catch (err) {
-    typing.remove();
-    appendChatMsg('ai', 'Connection error: ' + err.message);
-  }
+  await new Promise(r => setTimeout(r, 600));
+  const reply = getDemoResponse(text, C);
+  appendChatMsg('ai', reply);
+  chatHistory.push({ role: 'assistant', content: reply });
 }
 
-/* ================= UPLOAD ================= */
+/* ============== UPLOAD ============== */
 let __parsedCSV = null;
 let __pendingConfig = null;
 
@@ -1322,8 +1141,7 @@ function renderUploadView(C) {
 function handleCSVParse() {
   const name = document.getElementById('up-name').value.trim();
   const desc = document.getElementById('up-desc').value.trim();
-  const fileInput = document.getElementById('up-file');
-  const file = fileInput.files[0];
+  const file = document.getElementById('up-file').files[0];
   if (!name) { toast('Workspace name is required'); return; }
   if (!file) { toast('Please choose a CSV file'); return; }
 
@@ -1333,13 +1151,12 @@ function handleCSVParse() {
       const parsed = window.AVVA_CSV.parse(e.target.result);
       if (!parsed.data.length) { toast('CSV has no data rows'); return; }
       __parsedCSV = parsed;
-
       const detection = window.AVVA_CSV.detectColumns(parsed.headers, parsed.data);
       const geoCol = parsed.headers.find(h => detection[h].role === 'district' || detection[h].role === 'province');
       const metricCols = parsed.headers.filter(h => detection[h].type === 'number' && h !== geoCol);
 
-      document.getElementById('up-geo').textContent = geoCol || '(not detected — will use first text column)';
-      document.getElementById('up-metrics').textContent = metricCols.length ? metricCols.join(', ') : '(none detected)';
+      document.getElementById('up-geo').textContent = geoCol || '(not detected)';
+      document.getElementById('up-metrics').textContent = metricCols.length ? metricCols.join(', ') : '(none)';
       document.getElementById('up-rows').textContent = parsed.data.length.toLocaleString('en-ZA');
 
       const previewRows = parsed.data.slice(0, 8);
@@ -1372,24 +1189,13 @@ function renderUploadsView(C) {
   const grid = document.getElementById('uploads-grid');
   const uploads = window.AVVA_CSV.list();
   if (!uploads.length) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">' +
-      '<div style="font-size:44px;margin-bottom:12px">⤒</div>' +
-      '<h2 style="font-size:18px;margin:0 0 6px;color:#1f2d4d">No uploads yet</h2>' +
-      '<p style="margin:0 0 20px">Upload your first CSV to generate a dashboard automatically.</p>' +
-      '<button class="btn-primary" id="uploads-empty-cta">Upload Data →</button>' +
-    '</div>';
-    const cta = document.getElementById('uploads-empty-cta');
-    if (cta) cta.onclick = function() {
-      const btn = document.querySelector('#nav button[data-id="upload-data"]');
-      if (btn) btn.click();
-    };
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div style="font-size:44px;margin-bottom:12px">⤒</div><h2 style="font-size:18px;margin:0 0 6px;color:#1f2d4d">No uploads yet</h2><p>Upload a CSV to generate a dashboard automatically.</p></div>';
     return;
   }
   grid.innerHTML = uploads.map(u =>
     '<div class="card-item" data-upload-id="' + u.id + '">' +
-      '<button class="card-delete" data-upload-id="' + u.id + '" title="Delete">✕</button>' +
-      '<h4>' + u.workspaceName + '</h4>' +
-      '<p>' + (u.pageSubtitle || 'Generated from uploaded CSV') + '</p>' +
+      '<button class="card-delete" data-upload-id="' + u.id + '">✕</button>' +
+      '<h4>' + u.workspaceName + '</h4><p>' + (u.pageSubtitle || 'Uploaded dataset') + '</p>' +
       '<div class="meta"><span>' + Object.keys(u.districts || {}).length + ' districts</span><span>OPEN →</span></div>' +
     '</div>'
   ).join('');
@@ -1402,24 +1208,36 @@ function renderUploadsView(C) {
   grid.querySelectorAll('.card-delete').forEach(btn => {
     btn.onclick = function(e) {
       e.stopPropagation();
-      if (!confirm('Delete this uploaded workspace?')) return;
+      if (!confirm('Delete this workspace?')) return;
       window.AVVA_CSV.remove(btn.dataset.uploadId);
-      toast('Workspace deleted');
+      toast('Deleted');
       renderUploadsView(C);
     };
   });
 }
 
-/* ================= PROGRAMMES ================= */
+/* ============== PROGRAMMES ============== */
+function getPostedProgrammes(workspaceId) {
+  try {
+    const raw = localStorage.getItem('avva_programmes_' + workspaceId);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) { return []; }
+}
+
+function savePostedProgrammes(workspaceId, arr) {
+  try { localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(arr)); return true; }
+  catch (e) { return false; }
+}
+
 function renderProgrammes(C) {
   try {
     const baseline = (C.programmes && C.programmes.items) || [];
     const posted = getPostedProgrammes(C.id);
     const postedHtml = posted.map(p =>
       '<div class="prog" style="border-left:3px solid var(--accent-primary);padding-left:8px">' +
-        '<button class="prog-delete" data-prog-id="' + p.id + '" title="Delete">✕</button>' +
+        '<button class="prog-delete" data-prog-id="' + p.id + '">✕</button>' +
         '<strong>+ ' + (p.name || 'Untitled') + '</strong>' +
-        '<span>' + (p.type || 'Programme') + ' · ' + (p.budget ? 'R' + Number(p.budget).toLocaleString('en-ZA') : 'Budget TBC') + ' · ' + (p.status || 'Active') + '</span>' +
+        '<span>' + (p.type || 'Programme') + ' · ' + (p.budget ? 'R' + Number(p.budget).toLocaleString('en-ZA') : 'Budget TBC') + '</span>' +
         '<div class="bar-line"><i style="width:100%;background:var(--accent-primary)"></i></div>' +
       '</div>'
     ).join('');
@@ -1436,7 +1254,7 @@ function renderProgrammes(C) {
         deleteProgramme(C.id, btn.dataset.progId);
       };
     });
-  } catch (err) { console.error('[AVVA] renderProgrammes failed:', err); }
+  } catch (err) { console.error('renderProgrammes:', err); }
 }
 
 function deleteProgramme(workspaceId, progId) {
@@ -1446,7 +1264,6 @@ function deleteProgramme(workspaceId, progId) {
   if (!confirm('Delete programme "' + target.name + '"?')) return;
   const updated = existing.filter(p => p.id !== progId);
   savePostedProgrammes(workspaceId, updated);
-  deleteProgrammeFromBackend(workspaceId, progId);
   toast('Programme deleted');
   if (CONFIG) renderProgrammes(CONFIG);
 }
@@ -1457,7 +1274,7 @@ function setupPostProgramme(C) {
   const sectorOptions = C.sectors || ['General'];
   $('#pf-sector').innerHTML = sectorOptions.map(s => '<option>' + s + '</option>').join('');
   const districts = Object.keys(C.districts || {});
-  $('#pf-districts').innerHTML = districts.map(d =>
+  $('#pf-districts').innerHTML = districts.slice(0, 20).map(d =>
     '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" value="' + d + '">' + d + '</label>'
   ).join('');
 
@@ -1507,9 +1324,7 @@ function setupPostProgramme(C) {
     };
     const existing = getPostedProgrammes(C.id);
     existing.unshift(newProg);
-    const saved = savePostedProgrammes(C.id, existing);
-    if (!saved) { toast('Storage error — could not save'); return; }
-    saveProgrammeToBackend(C.id, newProg);
+    if (!savePostedProgrammes(C.id, existing)) { toast('Storage error'); return; }
     toast('✓ Programme "' + name + '" published');
     closePanel();
     resetForm();
@@ -1529,7 +1344,7 @@ function setupPostProgramme(C) {
 
 function openPostPanel() { if (window.__avva_openPostPanel) window.__avva_openPostPanel(); }
 
-/* ================= TABLE ================= */
+/* ============== TABLE ============== */
 function renderTable(C, item) {
   try {
     $('#table-title').textContent = item.label;
@@ -1553,10 +1368,7 @@ function renderTable(C, item) {
     columns.unshift('name');
     const rows = Object.entries(data).map(([name, d]) => {
       const row = { name: name };
-      for (const k of columns) {
-        if (k === 'name') continue;
-        row[k] = (d[k] !== undefined) ? d[k] : null;
-      }
+      for (const k of columns) if (k !== 'name') row[k] = (d[k] !== undefined) ? d[k] : null;
       const flags = typeof d.flags === 'number' ? d.flags : 0;
       row._status = flags > 2 ? 'Needs Review' : 'Compliant';
       return row;
@@ -1564,14 +1376,14 @@ function renderTable(C, item) {
     let sortKey = columns.find(c => c !== 'name') || 'name';
     let sortDir = -1;
     function fmtVal(key, v) {
-      if (v === null || v === undefined) return '<span style="color:#cbd5e1">—</span>';
+      if (v === null || v === undefined) return '—';
       if (typeof v === 'number') {
         const k = key.toLowerCase();
-        if (k.includes('revenue') || k.includes('funding') || k.includes('output') || k.includes('movement_rands')) {
+        if (k.includes('rands') || k.includes('revenue') || k.includes('funding') || k.includes('output')) {
           if (v >= 1_000_000_000) return 'R' + (v / 1_000_000_000).toFixed(1) + 'bn';
           return 'R' + (v / 1_000_000).toFixed(1) + 'm';
         }
-        if (k.includes('commercial') || k.includes('penetration') || k.includes('growth') || k.includes('coverage') || k.includes('completion') || k.includes('pct') || k.includes('score')) return v + '%';
+        if (k.includes('pct') || k.includes('score') || k.includes('commercial') || k.includes('coverage')) return v + '%';
         return v.toLocaleString('en-ZA');
       }
       return String(v);
@@ -1591,7 +1403,7 @@ function renderTable(C, item) {
       });
       $('#table-count').textContent = filtered.length + ' of ' + rows.length + ' rows';
       const header = columns.map(c => {
-        const label = c.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+        const label = c.replace(/_/g, ' ').replace(/^./, s => s.toUpperCase()).trim();
         const arrow = c === sortKey ? (sortDir === -1 ? ' ▾' : ' ▴') : '';
         return '<th data-key="' + c + '">' + label + arrow + '</th>';
       }).join('') + '<th>Status</th>';
@@ -1634,7 +1446,7 @@ function renderTable(C, item) {
   }
 }
 
-/* ================= CARDS ================= */
+/* ============== CARDS ============== */
 function renderCards(C, item) {
   $('#cards-title').textContent = item.label;
   $('#cards-sub').textContent = item.subtitle || ('Content for ' + C.workspaceName);
@@ -1663,21 +1475,19 @@ function renderCards(C, item) {
       { title: 'Quarterly FMCG Intelligence Report', description: 'Full commercial overview for the period', meta: ['Generated 1 month ago', 'PDF'] }
     ];
   } else if (cardsCfg.type === 'merchants') {
-    const districtNames = Object.keys(C.districts || {}).slice(0, 24);
-    cards = districtNames.map(name => {
+    cards = Object.keys(C.districts || {}).slice(0, 24).map(name => {
       const d = C.districts[name];
-      const merchantCount = d.merchants || 0;
       return {
         isPosted: false,
         title: name,
-        description: merchantCount + ' merchants · ' + (d.active_merchants || 0) + ' active · ' + (d.sku_availability_pct || 0) + '% SKU availability',
+        description: (d.merchants || 0) + ' merchants · ' + (d.active_merchants || 0) + ' active · ' + (d.sku_availability_pct || 0) + '% SKU availability',
         meta: ['Perfect Store: ' + (d.perfect_store_score_pct || 0) + '%', 'Movement: R' + (((d.product_movement_rands || 0) / 1_000_000).toFixed(1)) + 'm']
       };
     });
   } else if (cardsCfg.type === 'alerts') {
     cards = [
-      { title: '⚠ Low SKU availability', description: '4 districts below 55% SKU availability this period', meta: ['High', '2 hours ago'] },
-      { title: '⚠ Trader onboarding overdue', description: '12 merchants awaiting Business Passport completion', meta: ['Medium', '1 day ago'] },
+      { title: '⚠ Low SKU availability', description: '4 districts below 55% this period', meta: ['High', '2 hours ago'] },
+      { title: '⚠ Trader onboarding overdue', description: '12 merchants awaiting Business Passport', meta: ['Medium', '1 day ago'] },
       { title: '✓ Perfect Store milestone', description: 'Cape Town reached 75% execution score', meta: ['Info', '3 days ago'] },
       { title: '⚠ Sales rep coverage gap', description: '2 corridors below 60% visit completion', meta: ['High', '5 days ago'] }
     ];
@@ -1691,7 +1501,7 @@ function renderCards(C, item) {
   }
   $('#cards-grid').innerHTML = cards.map(c =>
     '<div class="card-item" ' + (c.isPosted ? 'data-prog-id="' + c.id + '"' : '') + '>' +
-      (c.isPosted ? '<button class="card-delete" data-prog-id="' + c.id + '" title="Delete">✕</button>' : '') +
+      (c.isPosted ? '<button class="card-delete" data-prog-id="' + c.id + '">✕</button>' : '') +
       '<h4>' + c.title + '</h4><p>' + c.description + '</p>' +
       '<div class="meta"><span>' + c.meta[0] + '</span><span>' + c.meta[1] + '</span></div>' +
     '</div>'
@@ -1709,22 +1519,22 @@ function renderCards(C, item) {
   };
 }
 
-/* ================= INFO ================= */
+/* ============== INFO ============== */
 function renderInfo(C, item) {
   $('#info-title').textContent = item.label;
   $('#info-sub').textContent = item.subtitle || (item.label + ' for ' + C.workspaceName);
   const bodies = {
-    settings: '<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Configure branding, terminology, data sources, and permissions for this workspace.</p>',
-    users: '<h3 style="margin:0 0 8px;font-size:14px">User Management</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Manage who has access to this workspace. Assign roles (Executive, Manager, Officer, Viewer, Administrator).</p>',
-    sources: '<h3 style="margin:0 0 8px;font-size:14px">Data Sources</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Connected systems: VulaScan feed, CSV uploads, external APIs. All data stays in South Africa.</p>',
-    audit: '<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace. Retention: 90 days.</p>',
-    permissions: '<h3 style="margin:0 0 8px;font-size:14px">Data &amp; Permissions</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Role-based access controls determine which data each user can see. Merchants retain ownership of their private documents. Institutional clients see aggregated data only. POPIA compliant.</p>',
-    "merchant-onboarding": '<h3 style="margin:0 0 8px;font-size:14px">Merchant Onboarding Journey</h3><p style="font-size:12px;color:#70809b;line-height:1.6;margin-bottom:12px">The flow from invitation to verified merchant:</p><ol style="font-size:12px;color:#70809b;line-height:1.8;padding-left:20px"><li>Merchant receives invitation via SMS/WhatsApp/email</li><li>Registers through VulaScan</li><li>Captures business details and trading location</li><li>Completes Business Passport</li><li>Selects product categories and brands stocked</li><li>Sets data-sharing preferences</li><li>Gets linked to an authorised programme</li><li>Becomes visible in AVVA Insights reporting</li></ol>'
+    settings: '<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Configure branding, terminology, data sources, and permissions.</p>',
+    users: '<h3 style="margin:0 0 8px;font-size:14px">User Management</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Manage who has access to this workspace.</p>',
+    sources: '<h3 style="margin:0 0 8px;font-size:14px">Data Sources</h3><p style="font-size:12px;color:#70809b;line-height:1.6">VulaScan feed, CSV uploads, external APIs. All data stays in South Africa.</p>',
+    audit: '<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions. Retention: 90 days.</p>',
+    permissions: '<h3 style="margin:0 0 8px;font-size:14px">Data &amp; Permissions</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Merchants retain ownership of their private documents. Institutional clients see aggregated data only. POPIA compliant.</p>',
+    "merchant-onboarding": '<h3 style="margin:0 0 8px;font-size:14px">Merchant Onboarding Journey</h3><ol style="font-size:12px;color:#70809b;line-height:1.8;padding-left:20px"><li>Merchant receives invitation via SMS/WhatsApp/email</li><li>Registers through VulaScan</li><li>Captures business details and trading location</li><li>Completes Business Passport</li><li>Selects product categories and brands stocked</li><li>Sets data-sharing preferences</li><li>Gets linked to an authorised programme</li><li>Becomes visible in AVVA Insights reporting</li></ol>'
   };
-  $('#info-body').innerHTML = bodies[item.id] || '<h3 style="margin:0 0 8px;font-size:14px">' + item.label + '</h3><p style="font-size:12px;color:#70809b;line-height:1.6">This section is part of the AVVA Insights platform.</p>';
+  $('#info-body').innerHTML = bodies[item.id] || '<h3 style="margin:0 0 8px;font-size:14px">' + item.label + '</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Part of the AVVA Insights platform.</p>';
 }
 
-/* ================= BOTTOM-LEFT ================= */
+/* ============== BOTTOM-LEFT ============== */
 function renderBottomLeft(C) {
   const bl = C.bottomLeft;
   if (!bl) return;
