@@ -341,34 +341,46 @@
 <div class="toast" id="toast"></div>
 
 <script src="configs/registry.js"></script>
-<script src="configs/tenants.js"></script>
-<script>
-window.AVVA_TENANTS = [
-  { id: "kzndoa", label: "KZN Dept. of Agriculture", shortLabel: "KZN DoA", status: "active", workspaces: ["kzn-doa"], defaultWorkspace: "kzn-doa", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#4f25d8" }, plan: "enterprise", createdAt: "2026-01-01" },
-  { id: "tigerbrands", label: "Tiger Brands", shortLabel: "Tiger Brands", status: "active", workspaces: ["fmcg-intelligence"], defaultWorkspace: "fmcg-intelligence", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#ea580c" }, plan: "enterprise", createdAt: "2026-10-15" },
-  { id: "hennessy", label: "Hennessy", shortLabel: "Hennessy", status: "active", workspaces: ["hennessy"], defaultWorkspace: "hennessy", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#b8860b" }, plan: "enterprise", createdAt: "2026-10-01" },
-  { id: "reemerge", label: "Reemerge Group — Platform Admin", shortLabel: "Platform", status: "active", workspaces: ["*"], defaultWorkspace: "kzn-doa", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#4f25d8" }, plan: "platform", createdAt: "2026-01-01" }
-];
-window.AVVA_detectTenantFromPath = function() {
-  var path = window.location.pathname.replace(/^\/+/, '');
-  var segments = path.split('/');
-  if (!segments[0] || segments[0].endsWith('.html')) return null;
-  return window.AVVA_TENANTS.find(function(t){ return t.id === segments[0]; }) || null;
-};
-console.log('[AVVA] Tenants inlined:', window.AVVA_TENANTS.length);
-</script>
 <script src="configs/accounts.js"></script>
 <script src="configs/ai.js"></script>
 <script src="configs/csv-uploader.js"></script>
 <script src="configs/sa-lookup.js"></script>
 <script src="configs/geo-resolver.js"></script>
 <script src="configs/api.js"></script>
-
 <script>
 /* ================================================================
-   AVVA INSIGHTS — RENDER ENGINE (tenant-aware)
+   AVVA INSIGHTS — RENDER ENGINE (tenant-aware, inlined tenants)
    ================================================================ */
 
+/* ---- TENANT REGISTRY (inline) ---- */
+window.AVVA_TENANTS = [
+  { id: "kzndoa", label: "KwaZulu-Natal Department of Agriculture", shortLabel: "KZN DoA", status: "active", workspaces: ["kzn-doa"], defaultWorkspace: "kzn-doa", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#4f25d8" }, plan: "enterprise", createdAt: "2026-01-01" },
+  { id: "tigerbrands", label: "Tiger Brands", shortLabel: "Tiger Brands", status: "active", workspaces: ["fmcg-intelligence"], defaultWorkspace: "fmcg-intelligence", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#ea580c" }, plan: "enterprise", createdAt: "2026-10-15" },
+  { id: "hennessy", label: "Hennessy", shortLabel: "Hennessy", status: "active", workspaces: ["hennessy"], defaultWorkspace: "hennessy", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#b8860b" }, plan: "enterprise", createdAt: "2026-10-01" },
+  { id: "reemerge", label: "Reemerge Group — Platform Admin", shortLabel: "Platform", status: "active", workspaces: ["*"], defaultWorkspace: "kzn-doa", tables: { users: "avva-users-prod", workspaces: "avva-workspaces-prod", programmes: "avva-programmes-prod", audit: "avva-audit-prod" }, branding: { accent: "#4f25d8" }, plan: "platform", createdAt: "2026-01-01" }
+];
+
+window.AVVA_detectTenantFromPath = function() {
+  var path = window.location.pathname.replace(/^\/+/, '');
+  var segments = path.split('/');
+  if (!segments[0] || segments[0].endsWith('.html')) return null;
+  return window.AVVA_TENANTS.find(function(t){ return t.id === segments[0]; }) || null;
+};
+
+/* Detect tenant: path first, then query param, then fallback */
+let currentTenant = null;
+try {
+  currentTenant = window.AVVA_detectTenantFromPath();
+  if (!currentTenant) {
+    const tp = new URLSearchParams(window.location.search).get('tenant');
+    if (tp) currentTenant = window.AVVA_TENANTS.find(function(t){ return t.id === tp; }) || null;
+  }
+  if (!currentTenant) currentTenant = window.AVVA_TENANTS.find(function(t){ return t.id === 'reemerge'; }) || window.AVVA_TENANTS[0];
+} catch (e) { console.warn('[AVVA] tenant detect failed', e); }
+
+console.log('[AVVA] Tenants:', window.AVVA_TENANTS.length, '| Active:', currentTenant ? currentTenant.id : 'none');
+
+/* ---- HELPERS ---- */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
@@ -381,10 +393,7 @@ const session = {
   signedInAt: Date.now()
 };
 
-const currentTenant = window.AVVA_detectTenantFromPath ? window.AVVA_detectTenantFromPath() : (window.AVVA_TENANTS ? window.AVVA_TENANTS.find(t => t.id === 'reemerge') : null);
-console.log('[AVVA] Active tenant:', currentTenant ? currentTenant.id : 'none');
-
-/* ---- BUILD WORKSPACE LIST ---- */
+/* ---- WORKSPACE LIST ---- */
 const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
   window.AVVA_CSV ? window.AVVA_CSV.list().map(u => ({
     id: u.id, label: u.workspaceName,
@@ -393,7 +402,6 @@ const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
   })) : []
 );
 
-/* Filter workspaces to those the tenant can access */
 let registry;
 if (currentTenant && currentTenant.workspaces && currentTenant.workspaces.includes('*')) {
   registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: 'admin' }));
@@ -406,11 +414,11 @@ if (currentTenant && currentTenant.workspaces && currentTenant.workspaces.includ
 }
 
 if (!registry.length) {
-  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No workspaces available for this tenant.</div>';
+  document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No workspaces available.</div>';
   throw new Error('No workspaces');
 }
 
-/* ---- SELECT ACTIVE WORKSPACE ---- */
+/* ---- SELECT WORKSPACE ---- */
 const urlParams = new URLSearchParams(window.location.search);
 const requestedId = urlParams.get('workspace');
 const activeEntry = registry.find(w => w.id === requestedId)
@@ -421,7 +429,7 @@ const OVERRIDE = sessionStorage.getItem('avva_role_override_' + activeEntry.id);
 const USER_ROLE = OVERRIDE || 'admin';
 const roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: 'Administrator', hide: [] };
 
-/* ---- CONFIG LOADER ---- */
+/* ---- LOADER ---- */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
@@ -435,45 +443,31 @@ function loadScript(src) {
 let CONFIG = null;
 
 (async function boot() {
-  /* Auto-login */
   if (!localStorage.getItem('avva_jwt')) {
     try {
       const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
       if (apiEndpoint && apiEndpoint.indexOf('http') === 0) {
-        const loginRes = await fetch(apiEndpoint + '/auth/login', {
+        const res = await fetch(apiEndpoint + '/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: 'admin@avva.demo',
-            password: 'admin123',
-            tenantId: currentTenant ? currentTenant.id : 'reemerge'
-          })
+          body: JSON.stringify({ email: 'admin@avva.demo', password: 'admin123', tenantId: currentTenant ? currentTenant.id : 'reemerge' })
         });
-        const loginData = await loginRes.json();
-        if (loginData.token) {
-          localStorage.setItem('avva_jwt', loginData.token);
-          console.log('[AVVA] Auto-login OK, tenant:', currentTenant ? currentTenant.id : 'reemerge');
-        }
+        const data = await res.json();
+        if (data.token) localStorage.setItem('avva_jwt', data.token);
       }
-    } catch (err) {
-      console.warn('[AVVA] Auto-login failed:', err);
-    }
+    } catch (err) { console.warn('[AVVA] auto-login failed', err); }
   }
 
-  /* Load workspace config */
   const uploaded = window.AVVA_CSV ? window.AVVA_CSV.load(activeEntry.id) : null;
-  if (uploaded) {
-    CONFIG = uploaded;
-    renderAll(CONFIG);
-    return;
-  }
+  if (uploaded) { CONFIG = uploaded; renderAll(CONFIG); return; }
+
   if (!activeEntry.configPath) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace. <a href="/dashboard.html" style="color:#4f25d8">← Back</a></div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace. <a href="dashboard.html" style="color:#4f25d8">← Back</a></div>';
     return;
   }
   try { await loadScript(activeEntry.configPath); }
   catch (err) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ' + activeEntry.configPath + '</div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load: ' + activeEntry.configPath + '</div>';
     return;
   }
   CONFIG = window.AVVA_CONFIG;
@@ -506,10 +500,9 @@ function loadProgrammesFromBackend(workspaceId) {
   .then(data => {
     const list = data.programmes || [];
     if (list.length) localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(list));
-    console.log('[AVVA] Loaded', list.length, 'programmes from backend');
     return list;
   })
-  .catch(err => { console.warn('[AVVA] Backend load failed:', err); return []; });
+  .catch(() => []);
 }
 
 function saveProgrammeToBackend(workspaceId, programme) {
@@ -520,23 +513,21 @@ function saveProgrammeToBackend(workspaceId, programme) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify(Object.assign({ workspaceId: workspaceId }, programme))
-  })
-  .then(r => r.json())
-  .catch(err => { console.warn('[AVVA] Backend save failed:', err); return null; });
+  }).then(r => r.json()).catch(() => null);
 }
 
 function deleteProgrammeFromBackend(workspaceId, progId) {
   const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
   const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return Promise.resolve(null);
-  return fetch(apiEndpoint + '/programmes', {
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return;
+  fetch(apiEndpoint + '/programmes', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify({ workspaceId: workspaceId, id: progId })
-  }).catch(err => { console.warn('[AVVA] Backend delete failed:', err); });
+  }).catch(() => {});
 }
 
-/* ---- MAIN RENDER ---- */
+/* ---- RENDER ---- */
 function renderAll(C) {
   if (C.accent) {
     document.documentElement.style.setProperty('--accent-primary', C.accent.primary);
@@ -544,7 +535,7 @@ function renderAll(C) {
     document.documentElement.style.setProperty('--accent-mid', C.accent.mid);
   }
 
-  /* Tenant override for org branding */
+  /* Tenant name overrides org name */
   if (currentTenant) {
     $('#org-name').textContent = currentTenant.shortLabel || currentTenant.label;
     $('#org-tagline').textContent = currentTenant.label;
@@ -580,6 +571,8 @@ function renderAll(C) {
 
   /* Role pill */
   const rolePill = $('#role-pill');
+  const old = rolePill.querySelector('.role-menu');
+  if (old) old.remove();
   const roleMenu = document.createElement('div');
   roleMenu.className = 'role-menu';
   roleMenu.innerHTML = '<div class="hint">DEMO · PREVIEW AS ROLE</div>' +
@@ -610,10 +603,10 @@ function renderAll(C) {
   $('#signout').onclick = function() {
     localStorage.removeItem('avva_session');
     localStorage.removeItem('avva_jwt');
-    window.location.href = '/index.html';
+    window.location.href = 'index.html';
   };
 
-  /* Workspace switcher — only tenant's workspaces */
+  /* Workspace switcher */
   const menu = $('#workspace-menu');
   menu.innerHTML = registry.map(w =>
     '<button data-ws="' + w.id + '" class="' + (w.id === C.id ? 'active' : '') + '">' +
@@ -624,7 +617,8 @@ function renderAll(C) {
     b.onclick = function() {
       const id = b.dataset.ws;
       if (id === C.id) { menu.classList.remove('show'); return; }
-      window.location.href = 'dashboard.html?workspace=' + id + (currentTenant ? '&tenant=' + currentTenant.id : '');
+      const tp = currentTenant ? '&tenant=' + currentTenant.id : '';
+      window.location.href = 'dashboard.html?workspace=' + id + tp;
     };
   });
   $('#workspace-btn').onclick = function(e) { e.stopPropagation(); menu.classList.toggle('show'); };
@@ -919,7 +913,6 @@ function renderCommandCentre(C) {
       if (matches.includes(nm)) layer.setStyle && layer.setStyle({ fillOpacity:.95, weight:3, color:C.accent.primary });
       else if (layer.setStyle) layer.setStyle({ fillOpacity:.12, weight:1, color:'#cbd5e1' });
     });
-    if (matches.length) toast(matches.length + ' match' + (matches.length > 1 ? 'es' : '') + ': ' + matches.slice(0, 3).join(', '));
   };
 
   document.querySelectorAll('#periods button').forEach(btn => {
@@ -938,10 +931,6 @@ function renderCommandCentre(C) {
       toast(label + ' ' + (cb.checked ? 'shown' : 'hidden'));
       let targetMetric = (C.metrics || []).find(m => m.id === layerId);
       if (!targetMetric) targetMetric = (C.metrics || []).find(m => m.label.toLowerCase().trim() === label.toLowerCase().trim());
-      if (!targetMetric) {
-        const keyword = label.toLowerCase();
-        targetMetric = (C.metrics || []).find(m => keyword.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(keyword.replace(/\s+/g, '_')));
-      }
       if (targetMetric) {
         currentMetric = targetMetric.id;
         buildLayer(currentData || C.districts, targetMetric.id);
@@ -1062,27 +1051,16 @@ function renderCards(C, item) {
     })));
   } else if (cfg.type === 'reports') {
     cards = [
-      { title: 'Quarterly Impact Report', description: 'Full overview of programme outcomes', meta: ['Generated 2 days ago', 'PDF'] },
-      { title: 'Funding Disbursement Report', description: 'Breakdown of funding streams', meta: ['Generated 1 week ago', 'CSV'] },
-      { title: 'Beneficiary Demographics', description: 'Age, gender, location distribution', meta: ['Generated 1 week ago', 'PDF'] },
-      { title: 'Compliance Audit Summary', description: 'Verification status', meta: ['Generated 2 weeks ago', 'PDF'] },
-      { title: 'District Comparison', description: 'Side-by-side metrics', meta: ['Generated 3 weeks ago', 'Excel'] },
-      { title: 'Annual Review 2025', description: 'Year-end summary', meta: ['Generated 1 month ago', 'PDF'] }
+      { title: 'Quarterly Impact Report', description: 'Full overview', meta: ['Generated 2 days ago', 'PDF'] },
+      { title: 'Funding Report', description: 'Breakdown of funding streams', meta: ['Generated 1 week ago', 'CSV'] },
+      { title: 'Beneficiary Demographics', description: 'Distribution by region', meta: ['Generated 1 week ago', 'PDF'] },
+      { title: 'Compliance Audit', description: 'Verification status', meta: ['Generated 2 weeks ago', 'PDF'] }
     ];
-  } else if (cfg.type === 'merchants') {
-    cards = Object.keys(C.districts || {}).slice(0, 24).map(name => {
-      const d = C.districts[name];
-      return {
-        title: name,
-        description: (d.merchants || 0) + ' merchants · ' + (d.active_merchants || 0) + ' active',
-        meta: ['Perfect Store: ' + (d.perfect_store_score_pct || 0) + '%', 'Movement: R' + (((d.product_movement_rands || 0) / 1_000_000).toFixed(1)) + 'm']
-      };
-    });
   } else if (cfg.type === 'alerts') {
     cards = [
       { title: '⚠ Low commercialisation', description: '3 districts below target', meta: ['High', '2 hours ago'] },
       { title: '⚠ Verification overdue', description: '12 sites awaiting inspection', meta: ['Medium', '1 day ago'] },
-      { title: '✓ Funding milestone reached', description: 'Quarterly target achieved', meta: ['Info', '3 days ago'] }
+      { title: '✓ Funding milestone', description: 'Quarterly target achieved', meta: ['Info', '3 days ago'] }
     ];
   } else if (Array.isArray(cfg.items)) {
     cards = cfg.items;
@@ -1122,7 +1100,7 @@ function renderInfo(C, item) {
     sources: '<h3>Data Sources</h3><p>VulaScan feed, CSV uploads, external APIs. All data stays in South Africa.</p>',
     audit: '<h3>Audit Logs</h3><p>Complete history. Retention: 90 days.</p>',
     permissions: '<h3>Data &amp; Permissions</h3><p>Merchants retain ownership of private documents. Institutional clients see aggregated data only. POPIA compliant.</p>',
-    "merchant-onboarding": '<h3>Merchant Onboarding Journey</h3><ol><li>Invitation</li><li>Register via VulaScan</li><li>Capture business details</li><li>Complete Business Passport</li><li>Select product categories</li><li>Set data-sharing preferences</li><li>Link to programme</li><li>Visible in AVVA</li></ol>'
+    "merchant-onboarding": '<h3>Merchant Onboarding Journey</h3><ol><li>Invitation</li><li>Register via VulaScan</li><li>Capture details</li><li>Complete Business Passport</li><li>Select categories</li><li>Set data-sharing preferences</li><li>Link to programme</li><li>Visible in AVVA</li></ol>'
   };
   $('#info-body').innerHTML = bodies[item.id] || '<h3>' + item.label + '</h3><p>Part of AVVA Insights.</p>';
 }
@@ -1373,9 +1351,8 @@ function handleGenerate(C) {
   if (!window.AVVA_CSV.save(__pendingConfig)) { toast('Could not save'); return; }
   toast('✓ Workspace generated');
   setTimeout(() => {
-    const wsParam = 'workspace=' + __pendingConfig.id;
-    const tenantParam = currentTenant ? '&tenant=' + currentTenant.id : '';
-    window.location.href = 'dashboard.html?' + wsParam + tenantParam;
+    const tp = currentTenant ? '&tenant=' + currentTenant.id : '';
+    window.location.href = 'dashboard.html?workspace=' + __pendingConfig.id + tp;
   }, 600);
 }
 
@@ -1383,7 +1360,7 @@ function renderUploadsView(C) {
   const grid = document.getElementById('uploads-grid');
   const uploads = window.AVVA_CSV.list();
   if (!uploads.length) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No uploads yet. Upload a CSV to generate a dashboard.</div>';
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No uploads yet.</div>';
     return;
   }
   grid.innerHTML = uploads.map(u =>
@@ -1396,8 +1373,8 @@ function renderUploadsView(C) {
   grid.querySelectorAll('.card-item').forEach(card => {
     card.onclick = function(e) {
       if (e.target.classList.contains('card-delete')) return;
-      const tenantParam = currentTenant ? '&tenant=' + currentTenant.id : '';
-      window.location.href = 'dashboard.html?workspace=' + card.dataset.uploadId + tenantParam;
+      const tp = currentTenant ? '&tenant=' + currentTenant.id : '';
+      window.location.href = 'dashboard.html?workspace=' + card.dataset.uploadId + tp;
     };
   });
   grid.querySelectorAll('.card-delete').forEach(btn => {
