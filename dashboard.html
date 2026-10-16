@@ -184,7 +184,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 </style>
 </head>
 <body>
-  <div class="app">
+<div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">AVVA<small>INSIGHTS</small></div>
     <nav class="nav" id="nav" aria-label="Main navigation"></nav>
@@ -469,7 +469,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 <script src="configs/geo-resolver.js"></script>
 <script src="configs/api.js"></script>
 <script>
-  const $ = sel => document.querySelector(sel);
+const $ = sel => document.querySelector(sel);
 const $$ = sel => Array.from(document.querySelectorAll(sel));
 
 /* ================= SESSION GATE ================= */
@@ -492,11 +492,11 @@ const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
 
 let registry;
 if (session.workspaces && session.workspaces["*"]) {
-  registry = allWorkspaces.map(w => ({ ...w, userRole: session.workspaces["*"] }));
+  registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: session.workspaces["*"] }));
 } else if (session.workspaces) {
   registry = allWorkspaces
     .filter(w => session.workspaces[w.id])
-    .map(w => ({ ...w, userRole: session.workspaces[w.id] }));
+    .map(w => Object.assign({}, w, { userRole: session.workspaces[w.id] }));
 } else {
   registry = allWorkspaces;
 }
@@ -541,17 +541,17 @@ let CONFIG = null;
     return;
   }
   if (!activeEntry.configPath) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace. It may not be loaded yet.</div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">No config for this workspace. It may not be loaded yet. <br><br><a href="dashboard.html" style="color:#4f25d8">← Return to default workspace</a></div>';
     return;
   }
   try { await loadScript(activeEntry.configPath); }
   catch (err) {
-    document.body.innerHTML = `<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ${activeEntry.configPath}</div>`;
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ' + activeEntry.configPath + '<br><br><a href="dashboard.html" style="color:#4f25d8">← Return to default workspace</a></div>';
     return;
   }
   CONFIG = window.AVVA_CONFIG;
   if (!CONFIG) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined.</div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined. The workspace may be misconfigured.</div>';
     return;
   }
   localStorage.setItem('avva_last_workspace', CONFIG.id);
@@ -568,7 +568,7 @@ function toast(msg) {
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
 }
 
-/* ================= PROGRAMMES STORAGE (localStorage + backend) ================= */
+/* ================= PROGRAMMES ================= */
 function getPostedProgrammes(workspaceId) {
   try {
     const raw = localStorage.getItem('avva_programmes_' + workspaceId);
@@ -579,10 +579,8 @@ function getPostedProgrammes(workspaceId) {
 }
 
 function savePostedProgrammes(workspaceId, arr) {
-  try {
-    localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(arr));
-    return true;
-  } catch (err) { return false; }
+  try { localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(arr)); return true; }
+  catch (err) { return false; }
 }
 
 function loadProgrammesFromBackend(workspaceId) {
@@ -614,34 +612,22 @@ function saveProgrammeToBackend(workspaceId, programme) {
   }
   return fetch(apiEndpoint + '/programmes', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify(Object.assign({ workspaceId: workspaceId }, programme))
   })
   .then(function(res) { return res.json(); })
-  .catch(function(err) {
-    console.warn('[AVVA] Backend programme save failed:', err);
-    return null;
-  });
+  .catch(function(err) { console.warn('[AVVA] Backend save failed:', err); });
 }
 
 function deleteProgrammeFromBackend(workspaceId, progId) {
   const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
   const token = localStorage.getItem('avva_jwt');
-  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
-    return Promise.resolve(null);
-  }
-  return fetch(apiEndpoint + '/programmes', {
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return;
+  fetch(apiEndpoint + '/programmes', {
     method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify({ workspaceId: workspaceId, id: progId })
-  })
-  .catch(function(err) { console.warn('[AVVA] Backend programme delete failed:', err); });
+  }).catch(function(err) { console.warn('[AVVA] Backend delete failed:', err); });
 }
 
 /* ================= MAIN RENDER ================= */
@@ -652,14 +638,14 @@ function renderAll(C) {
     document.documentElement.style.setProperty('--accent-mid', C.accent.mid);
   }
 
-  document.title = `AVVA Insights · ${C.workspaceName}`;
+  document.title = 'AVVA Insights · ' + C.workspaceName;
   $('#org-name').textContent = (C.org && C.org.name) || 'Reemerge Group';
   $('#org-tagline').textContent = (C.org && C.org.tagline) || 'Making Invisible Markets Visible.';
   $('#workspace-label').textContent = C.workspaceName;
   $('#page-title').textContent = C.pageTitle;
   $('#page-subtitle').textContent = C.pageSubtitle || '';
   $('#data-disclaimer').textContent = C.dataDisclaimer || '';
-  $('#foot-status').textContent = 'Prototype · powered by AWS Cape Town';
+  $('#foot-status').textContent = 'Powered by AWS Cape Town';
   $('#foot-copy').textContent = '© 2026 ' + ((C.org && C.org.name) || 'Reemerge Group');
   $('#map-title').textContent = C.map.title;
   $('#map-subtitle').textContent = C.map.subtitle;
@@ -681,6 +667,8 @@ function renderAll(C) {
   /* Role pill + demo switcher */
   $('#role-label').textContent = roleRules.label.toUpperCase();
   const rolePill = $('#role-pill');
+  const existingMenu = rolePill.querySelector('.role-menu');
+  if (existingMenu) existingMenu.remove();
   const roleMenu = document.createElement('div');
   roleMenu.className = 'role-menu';
   roleMenu.innerHTML = '<div class="hint">DEMO · PREVIEW AS ROLE</div>' +
@@ -692,10 +680,10 @@ function renderAll(C) {
     '</div>';
   rolePill.style.position = 'relative';
   rolePill.appendChild(roleMenu);
-  rolePill.addEventListener('click', (e) => { e.stopPropagation(); roleMenu.classList.toggle('show'); });
+  rolePill.onclick = function(e) { e.stopPropagation(); roleMenu.classList.toggle('show'); };
   document.addEventListener('click', () => roleMenu.classList.remove('show'));
   roleMenu.querySelectorAll('button').forEach(b => {
-    b.addEventListener('click', () => {
+    b.onclick = function() {
       const newRole = b.dataset.role;
       if (newRole === '__reset__') {
         sessionStorage.removeItem('avva_role_override_' + C.id);
@@ -705,14 +693,14 @@ function renderAll(C) {
         toast('Previewing as ' + ((window.AVVA_ROLE_RULES[newRole] || {}).label || newRole));
       }
       setTimeout(() => window.location.reload(), 400);
-    });
+    };
   });
 
-  $('#signout').addEventListener('click', () => {
+  $('#signout').onclick = function() {
     localStorage.removeItem('avva_session');
     localStorage.removeItem('avva_jwt');
     window.location.href = 'index.html';
-  });
+  };
 
   /* Workspace switcher */
   const menu = $('#workspace-menu');
@@ -722,14 +710,14 @@ function renderAll(C) {
     '</button>'
   ).join('');
   menu.querySelectorAll('button').forEach(b => {
-    b.addEventListener('click', () => {
+    b.onclick = function() {
       const id = b.dataset.ws;
       if (id === C.id) { menu.classList.remove('show'); return; }
       localStorage.setItem('avva_last_workspace', id);
       window.location.href = 'dashboard.html?workspace=' + id;
-    });
+    };
   });
-  $('#workspace-btn').addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('show'); });
+  $('#workspace-btn').onclick = function(e) { e.stopPropagation(); menu.classList.toggle('show'); };
   document.addEventListener('click', () => menu.classList.remove('show'));
 
   renderSidebar(C);
@@ -744,7 +732,8 @@ function renderAll(C) {
     }
   });
 }
-  /* ================= SIDEBAR ================= */
+
+/* ================= SIDEBAR ================= */
 function renderSidebar(C) {
   const nav = $('#nav');
   nav.innerHTML = '';
@@ -765,23 +754,22 @@ function renderSidebar(C) {
       btn.dataset.label = item.label;
       btn.innerHTML = '<span class="ico">' + item.icon + '</span>' + item.label +
         (item.badge ? '<span class="badge">' + item.badge + '</span>' : '');
-      btn.addEventListener('click', () => activateView(C, item, btn));
+      btn.onclick = function() { activateView(C, item, btn); };
       nav.appendChild(btn);
       if (!firstBtn) firstBtn = btn;
     });
   });
 
-  // Upload Data + My Uploads always at top
   const uploadItems = [
     { id: 'upload-data', label: 'Upload Data', icon: '⤒', view: 'upload' },
     { id: 'my-uploads', label: 'My Uploads', icon: '▤', view: 'uploads' }
   ];
-  uploadItems.forEach(item => {
+  uploadItems.reverse().forEach(item => {
     const btn = document.createElement('button');
     btn.dataset.id = item.id;
     btn.dataset.label = item.label;
     btn.innerHTML = '<span class="ico">' + item.icon + '</span>' + item.label;
-    btn.addEventListener('click', () => activateView(C, item, btn));
+    btn.onclick = function() { activateView(C, item, btn); };
     nav.insertBefore(btn, nav.firstChild);
   });
 
@@ -923,7 +911,7 @@ function renderCommandCentre(C) {
   const maxVal = sorted.length ? (sorted[0][1][primaryKey] || 1) : 1;
   $('#top-districts').innerHTML = sorted.slice(0, 5).map(([name, d]) => {
     const val = d[primaryKey] || 0;
-    const display = (primaryKey === 'revenue' || primaryKey === 'funding') ? fmtCurrencyM(val) : fmtNumber(val);
+    const display = (primaryKey === 'revenue' || primaryKey === 'funding' || primaryKey.indexOf('rands') > -1) ? fmtCurrencyM(val) : fmtNumber(val);
     return '<div class="prog"><strong>' + name + '</strong><span>' + display + ' ' + C.primaryMetricLabel.toLowerCase() + '</span><div class="bar-line"><i style="width:' + ((val / maxVal) * 100).toFixed(0) + '%"></i></div></div>';
   }).join('');
 
@@ -959,7 +947,6 @@ function renderCommandCentre(C) {
     const level = (window.AVVA_SA_LOOKUP ? window.AVVA_SA_LOOKUP.detectLevel(nms) : 'district');
 
     if (!window.AVVA_GEO) {
-      // Fallback: no resolver loaded — use rectangles
       drawRectFallback(dataObj, metricKey, min, max);
       return;
     }
@@ -985,7 +972,7 @@ function renderCommandCentre(C) {
           onEachFeature: (f, layer) => {
             const p = f.properties;
             const val = p[metricKey] || 0;
-            const valDisplay = (metricKey === 'revenue' || metricKey === 'funding') ? fmtCurrencyM(val) : fmtNumber(val);
+            const valDisplay = (metricKey.indexOf('rands') > -1 || metricKey === 'revenue' || metricKey === 'funding') ? fmtCurrencyM(val) : fmtNumber(val);
             layer.bindTooltip('<strong>' + p.name + '</strong><br>' + valDisplay + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
             layer.on({
               mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
@@ -998,9 +985,8 @@ function renderCommandCentre(C) {
         currentLayer = L.layerGroup().addTo(map);
       }
 
-            leftovers.forEach((lo, i) => {
+      leftovers.forEach((lo, i) => {
         const d = lo.props;
-        // Place bubble at the district's actual centroid if bounds exist
         let lat = -28.5, lng = 24.5;
         if (d.bounds && Array.isArray(d.bounds) && d.bounds.length === 2) {
           const [[south, west], [north, east]] = d.bounds;
@@ -1013,12 +999,10 @@ function renderCommandCentre(C) {
           lat = -28.0 + (row * 1.2);
           lng = 24.0 + (col * 1.2);
         }
-        const maxVal = Math.max.apply(null, leftovers.map(l => l.value)) || 1;
-        const radius = 8 + (lo.value / maxVal) * 24;
+        const maxVal2 = Math.max.apply(null, leftovers.map(l => l.value)) || 1;
+        const radius = 8 + (lo.value / maxVal2) * 24;
         const colour = getColour(lo.value, min, max);
-        const circle = L.circleMarker([lat, lng], {
-          radius: radius, fillColor: colour, fillOpacity: 0.85, color: '#fff', weight: 1.5
-        }).addTo(map);
+        const circle = L.circleMarker([lat, lng], { radius: radius, fillColor: colour, fillOpacity: 0.85, color: '#fff', weight: 1.5 }).addTo(map);
         circle.bindTooltip('<strong>' + lo.name + '</strong><br>' + lo.value.toLocaleString('en-ZA') + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
         circle.on('click', () => showDetail(lo.props));
         currentLayer.addLayer(circle);
@@ -1058,8 +1042,9 @@ function renderCommandCentre(C) {
   function showDetail(p) {
     const rows = Object.entries(p).filter(([k,v]) => k !== 'bounds' && k !== 'name' && typeof v !== 'object')
       .map(([k,v]) => {
-        const label = k.charAt(0).toUpperCase() + k.slice(1);
-        const display = (k === 'revenue' || k === 'funding') ? 'R' + (v/1_000_000).toFixed(1) + 'm' : typeof v === 'number' ? fmtNumber(v) : v;
+        const label = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        const isCurrency = k.indexOf('rands') > -1 || k === 'revenue' || k === 'funding';
+        const display = isCurrency ? 'R' + (v/1_000_000).toFixed(1) + 'm' : typeof v === 'number' ? fmtNumber(v) : v;
         return '<div class="detail-row"><span class="label">' + label + '</span><span class="value">' + display + '</span></div>';
       }).join('');
     $('#district-sub').textContent = C.workspaceName + ' · ' + p.name;
@@ -1072,17 +1057,17 @@ function renderCommandCentre(C) {
   if (C.geoScope === 'both' && C.provinces) {
     gt.style.display = 'flex';
     gt.querySelectorAll('button').forEach(b => {
-      b.addEventListener('click', () => {
+      b.onclick = function() {
         gt.querySelectorAll('button').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
         if (b.dataset.geo === 'provinces') { buildLayer(C.provinces, currentMetric); map.setView([-29.0, 24.0], 5); }
         else { buildLayer(C.districts, currentMetric); map.setView(C.map.center, C.map.zoom); }
-      });
+      };
     });
   }
 
   const si = $('#search'); const sm = $('#search-matches');
-  si.addEventListener('input', e => {
+  si.oninput = function(e) {
     const q = e.target.value.trim().toLowerCase();
     if (!q) { if (currentLayer) currentLayer.eachLayer(l => currentLayer.resetStyle && currentLayer.resetStyle(l)); sm.classList.remove('show'); return; }
     const nms = Object.keys(currentData || {});
@@ -1094,60 +1079,42 @@ function renderCommandCentre(C) {
     });
     sm.innerHTML = matches.length ? '<b>' + matches.length + '</b> match' + (matches.length > 1 ? 'es' : '') + ': ' + matches.join(', ') : 'No matches';
     sm.classList.add('show');
-  });
-  si.addEventListener('blur', () => setTimeout(() => sm.classList.remove('show'), 200));
-  si.addEventListener('focus', () => { if (si.value.trim()) sm.classList.add('show'); });
+  };
+  si.onblur = function() { setTimeout(() => sm.classList.remove('show'), 200); };
+  si.onfocus = function() { if (si.value.trim()) sm.classList.add('show'); };
 
   document.querySelectorAll('#periods button').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.onclick = function() {
       document.querySelectorAll('#periods button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       $('#date-label').textContent = 'Reporting period · ' + btn.textContent + '　▣';
       toast(btn.textContent + ' view selected');
-    });
+    };
   });
 
-    document.querySelectorAll('#layer-controls [data-layer]').forEach(cb => {
-    cb.addEventListener('change', () => {
+  document.querySelectorAll('#layer-controls [data-layer]').forEach(cb => {
+    cb.onchange = function() {
       const layerId = cb.dataset.layer;
       const label = cb.parentElement.textContent.trim();
       toast(label + ' ' + (cb.checked ? 'shown' : 'hidden'));
-
-      // Try multiple matching strategies
-      let targetMetric = null;
-
-      // 1. Direct match by layer id to metric id
-      targetMetric = (C.metrics || []).find(m => m.id === layerId);
-
-      // 2. Match by label (both directions, case-insensitive)
-      if (!targetMetric) {
-        targetMetric = (C.metrics || []).find(m =>
-          m.label.toLowerCase().trim() === label.toLowerCase().trim()
-        );
-      }
-
-      // 3. Match by keywords in label
+      let targetMetric = (C.metrics || []).find(m => m.id === layerId);
+      if (!targetMetric) targetMetric = (C.metrics || []).find(m => m.label.toLowerCase().trim() === label.toLowerCase().trim());
       if (!targetMetric) {
         const keyword = label.toLowerCase();
-        targetMetric = (C.metrics || []).find(m =>
-          keyword.includes(m.id.toLowerCase()) ||
-          m.id.toLowerCase().includes(keyword.replace(/\s+/g, '_'))
-        );
+        targetMetric = (C.metrics || []).find(m => keyword.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(keyword.replace(/\s+/g, '_')));
       }
-
       if (targetMetric) {
         currentMetric = targetMetric.id;
         console.log('[AVVA] Layer switch:', layerId, '→ metric:', targetMetric.id);
         buildLayer(currentData || C.districts, targetMetric.id);
-      } else {
-        console.warn('[AVVA] No metric matched for layer:', layerId, label);
       }
-    });
+    };
   });
 
-  $('#bell').addEventListener('click', () => toast('No live notifications in this prototype'));
+  $('#bell').onclick = function() { toast('No live notifications in this prototype'); };
 }
-  /* ================= FULL-WIDTH MAP ================= */
+
+/* ================= FULL-WIDTH MAP ================= */
 let fullMapInstance = null;
 let fullMapLayer = null;
 
@@ -1205,20 +1172,7 @@ function renderFullMap(C, item) {
     const min = Math.min.apply(null, values); const max = Math.max.apply(null, values);
     const level = (window.AVVA_SA_LOOKUP ? window.AVVA_SA_LOOKUP.detectLevel(nms) : 'district');
 
-    if (!window.AVVA_GEO) {
-      const features = nms.map(name => {
-        const d = dataObj[name];
-        const bounds = d.bounds || [[-29.5, 30.0], [-28.5, 31.0]];
-        const [[south, west], [north, east]] = bounds;
-        return { type: 'Feature', properties: Object.assign({ name: name }, d),
-          geometry: { type: 'Polygon', coordinates: [[[west,south],[east,south],[east,north],[west,north],[west,south]]] } };
-      });
-      if (fullMapLayer) fullMapInstance.removeLayer(fullMapLayer);
-      fullMapLayer = L.geoJSON({ type: 'FeatureCollection', features: features }, {
-        style: f => ({ fillColor: getColour(f.properties[metricKey] || 0, min, max), weight: 1.5, opacity: .9, color: '#fff', fillOpacity: .78 })
-      }).addTo(fullMapInstance);
-      return;
-    }
+    if (!window.AVVA_GEO) return;
 
     window.AVVA_GEO.load(level).then(() => {
       const features = [];
@@ -1235,7 +1189,7 @@ function renderFullMap(C, item) {
           onEachFeature: (f, layer) => {
             const p = f.properties;
             const val = p[metricKey] || 0;
-            const display = (metricKey === 'revenue' || metricKey === 'funding') ? 'R' + (val/1_000_000).toFixed(1) + 'm' : val.toLocaleString('en-ZA');
+            const display = (metricKey.indexOf('rands') > -1 || metricKey === 'revenue' || metricKey === 'funding') ? 'R' + (val/1_000_000).toFixed(1) + 'm' : val.toLocaleString('en-ZA');
             layer.bindTooltip('<strong>' + p.name + '</strong><br>' + display + ' ' + C.primaryMetricLabel.toLowerCase(), { sticky: true });
             layer.on({
               mouseover: e => e.target.setStyle({ weight: 2.5, color: C.accent.primary, fillOpacity: .9 }),
@@ -1252,35 +1206,21 @@ function renderFullMap(C, item) {
 
   drawLayer(C.districts, C.primaryMetric);
 
-    document.querySelectorAll('#mapfull-layer-controls [data-layer]').forEach(cb => {
-    cb.addEventListener('change', () => {
+  document.querySelectorAll('#mapfull-layer-controls [data-layer]').forEach(cb => {
+    cb.onchange = function() {
       const layerId = cb.dataset.layer;
       const label = cb.parentElement.textContent.trim();
       toast(label + ' ' + (cb.checked ? 'shown' : 'hidden'));
-
-      let targetMetric = null;
-      targetMetric = (C.metrics || []).find(m => m.id === layerId);
-      if (!targetMetric) {
-        targetMetric = (C.metrics || []).find(m =>
-          m.label.toLowerCase().trim() === label.toLowerCase().trim()
-        );
-      }
+      let targetMetric = (C.metrics || []).find(m => m.id === layerId);
+      if (!targetMetric) targetMetric = (C.metrics || []).find(m => m.label.toLowerCase().trim() === label.toLowerCase().trim());
       if (!targetMetric) {
         const keyword = label.toLowerCase();
-        targetMetric = (C.metrics || []).find(m =>
-          keyword.includes(m.id.toLowerCase()) ||
-          m.id.toLowerCase().includes(keyword.replace(/\s+/g, '_'))
-        );
+        targetMetric = (C.metrics || []).find(m => keyword.includes(m.id.toLowerCase()) || m.id.toLowerCase().includes(keyword.replace(/\s+/g, '_')));
       }
-
-      if (targetMetric) {
-        console.log('[AVVA] Observatory layer switch:', layerId, '→ metric:', targetMetric.id);
-        drawLayer(C.districts, targetMetric.id);
-      } else {
-        console.warn('[AVVA] No metric matched for observatory layer:', layerId, label);
-      }
-    });
+      if (targetMetric) drawLayer(C.districts, targetMetric.id);
+    };
   });
+}
 
 /* ================= CHAT ================= */
 let chatHistory = [];
@@ -1296,10 +1236,10 @@ function renderChatView(C) {
   const sendBtn = document.getElementById('chat-send');
   const newSend = sendBtn.cloneNode(true);
   sendBtn.parentNode.replaceChild(newSend, sendBtn);
-  newSend.addEventListener('click', () => sendChatMessage(C));
-  input.addEventListener('keydown', (e) => {
+  newSend.onclick = function() { sendChatMessage(C); };
+  input.onkeydown = function(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(C); }
-  });
+  };
 }
 
 function appendChatMsg(role, text) {
@@ -1342,7 +1282,6 @@ async function sendChatMessage(C) {
   appendChatMsg('user', text);
   chatHistory.push({ role: 'user', content: text });
   input.value = '';
-
   const container = document.getElementById('chat-messages');
   const typing = document.createElement('div');
   typing.className = 'chat-msg ai';
@@ -1388,12 +1327,12 @@ function renderUploadView(C) {
   document.getElementById('up-desc').value = '';
   document.getElementById('up-file').value = '';
 
-  document.getElementById('up-parse').onclick = () => handleCSVParse();
-  document.getElementById('up-back').onclick = () => {
+  document.getElementById('up-parse').onclick = function() { handleCSVParse(); };
+  document.getElementById('up-back').onclick = function() {
     step1.style.display = 'block';
     step2.style.display = 'none';
   };
-  document.getElementById('up-generate').onclick = () => handleGenerate(C);
+  document.getElementById('up-generate').onclick = function() { handleGenerate(C); };
 }
 
 function handleCSVParse() {
@@ -1401,12 +1340,11 @@ function handleCSVParse() {
   const desc = document.getElementById('up-desc').value.trim();
   const fileInput = document.getElementById('up-file');
   const file = fileInput.files[0];
-
   if (!name) { toast('Workspace name is required'); return; }
   if (!file) { toast('Please choose a CSV file'); return; }
 
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = function(e) {
     try {
       const parsed = window.AVVA_CSV.parse(e.target.result);
       if (!parsed.data.length) { toast('CSV has no data rows'); return; }
@@ -1433,9 +1371,7 @@ function handleCSVParse() {
 
       document.getElementById('upload-step-1').style.display = 'none';
       document.getElementById('upload-step-2').style.display = 'block';
-    } catch (err) {
-      toast('CSV parse error: ' + err.message);
-    }
+    } catch (err) { toast('CSV parse error: ' + err.message); }
   };
   reader.readAsText(file);
 }
@@ -1459,7 +1395,7 @@ function renderUploadsView(C) {
       '<button class="btn-primary" id="uploads-empty-cta">Upload Data →</button>' +
     '</div>';
     const cta = document.getElementById('uploads-empty-cta');
-    if (cta) cta.onclick = () => {
+    if (cta) cta.onclick = function() {
       const btn = document.querySelector('#nav button[data-id="upload-data"]');
       if (btn) btn.click();
     };
@@ -1474,19 +1410,19 @@ function renderUploadsView(C) {
     '</div>'
   ).join('');
   grid.querySelectorAll('.card-item').forEach(card => {
-    card.addEventListener('click', (e) => {
+    card.onclick = function(e) {
       if (e.target.classList.contains('card-delete')) return;
       window.location.href = 'dashboard.html?workspace=' + card.dataset.uploadId;
-    });
+    };
   });
   grid.querySelectorAll('.card-delete').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.onclick = function(e) {
       e.stopPropagation();
       if (!confirm('Delete this uploaded workspace?')) return;
       window.AVVA_CSV.remove(btn.dataset.uploadId);
       toast('Workspace deleted');
       renderUploadsView(C);
-    });
+    };
   });
 }
 
@@ -1511,10 +1447,10 @@ function renderProgrammes(C) {
     if (!el) return;
     el.innerHTML = postedHtml + baselineHtml;
     el.querySelectorAll('.prog-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.onclick = function(e) {
         e.stopPropagation();
         deleteProgramme(C.id, btn.dataset.progId);
-      });
+      };
     });
   } catch (err) { console.error('[AVVA] renderProgrammes failed:', err); }
 }
@@ -1647,11 +1583,11 @@ function renderTable(C, item) {
       if (v === null || v === undefined) return '<span style="color:#cbd5e1">—</span>';
       if (typeof v === 'number') {
         const k = key.toLowerCase();
-        if (k.includes('revenue') || k.includes('funding') || k.includes('output')) {
+        if (k.includes('revenue') || k.includes('funding') || k.includes('output') || k.includes('movement_rands')) {
           if (v >= 1_000_000_000) return 'R' + (v / 1_000_000_000).toFixed(1) + 'bn';
           return 'R' + (v / 1_000_000).toFixed(1) + 'm';
         }
-        if (k.includes('commercial') || k.includes('penetration') || k.includes('growth') || k.includes('coverage') || k.includes('completion')) return v + '%';
+        if (k.includes('commercial') || k.includes('penetration') || k.includes('growth') || k.includes('coverage') || k.includes('completion') || k.includes('pct') || k.includes('score')) return v + '%';
         return v.toLocaleString('en-ZA');
       }
       return String(v);
@@ -1671,7 +1607,7 @@ function renderTable(C, item) {
       });
       $('#table-count').textContent = filtered.length + ' of ' + rows.length + ' rows';
       const header = columns.map(c => {
-        const label = c.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+        const label = c.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
         const arrow = c === sortKey ? (sortDir === -1 ? ' ▾' : ' ▴') : '';
         return '<th data-key="' + c + '">' + label + arrow + '</th>';
       }).join('') + '<th>Status</th>';
@@ -1689,16 +1625,16 @@ function renderTable(C, item) {
         : '<tr><td colspan="99" style="text-align:center;padding:40px;color:#94a3b8">No matching rows</td></tr>';
       $('#data-table').innerHTML = '<thead><tr>' + header + '</tr></thead><tbody>' + body + '</tbody>';
       document.querySelectorAll('#data-table th').forEach(th => {
-        th.addEventListener('click', () => {
+        th.onclick = function() {
           const k = th.dataset.key;
           if (k === sortKey) sortDir *= -1; else { sortKey = k; sortDir = 1; }
           draw();
-        });
+        };
       });
     }
     $('#table-search').oninput = draw;
     $('#table-status-filter').onchange = draw;
-    $('#table-export').onclick = () => {
+    $('#table-export').onclick = function() {
       const headers = columns.join(',');
       const lines = rows.map(r => columns.map(c => '"' + (r[c] === null ? '' : r[c]) + '"').join(','));
       const csv = headers + '\n' + lines.join('\n');
@@ -1720,6 +1656,7 @@ function renderCards(C, item) {
   $('#cards-sub').textContent = item.subtitle || ('Content for ' + C.workspaceName);
   const cardsCfg = item.cards || {};
   let cards = [];
+
   if (cardsCfg.type === 'programmes') {
     const baseline = (C.programmes && C.programmes.items) || [];
     const posted = getPostedProgrammes(C.id);
@@ -1734,24 +1671,36 @@ function renderCards(C, item) {
     })));
   } else if (cardsCfg.type === 'reports') {
     cards = [
-      { title: 'Quarterly Impact Report', description: 'Q4 summary across all districts', meta: ['Generated 2 days ago', 'PDF'] },
-      { title: 'Funding Disbursement Report', description: 'Detailed breakdown of all funding streams', meta: ['Generated 1 week ago', 'CSV'] },
-      { title: 'Beneficiary Demographics', description: 'Age, gender, and location distribution', meta: ['Generated 1 week ago', 'PDF'] },
-      { title: 'Compliance Audit Summary', description: 'Verification status across all sites', meta: ['Generated 2 weeks ago', 'PDF'] },
-      { title: 'District Comparison Report', description: 'Side-by-side metrics across districts', meta: ['Generated 3 weeks ago', 'Excel'] },
-      { title: 'Annual Review 2025', description: 'Year-end summary and outcomes', meta: ['Generated 1 month ago', 'PDF'] }
+      { title: 'Perfect Store Execution Report', description: 'Corridor-level assessment across all reporting districts', meta: ['Generated 2 days ago', 'PDF'] },
+      { title: 'Category Movement Summary', description: 'Aggregated movement by product category', meta: ['Generated 1 week ago', 'CSV'] },
+      { title: 'Merchant Onboarding Status', description: 'Progress across the trader development programme', meta: ['Generated 1 week ago', 'PDF'] },
+      { title: 'Sales Representative Coverage', description: 'Visit completion and follow-up actions by corridor', meta: ['Generated 2 weeks ago', 'PDF'] },
+      { title: 'SKU Availability Analysis', description: 'Stock gaps and replenishment indicators', meta: ['Generated 3 weeks ago', 'Excel'] },
+      { title: 'Quarterly FMCG Intelligence Report', description: 'Full commercial overview for the period', meta: ['Generated 1 month ago', 'PDF'] }
     ];
+  } else if (cardsCfg.type === 'merchants') {
+    const districtNames = Object.keys(C.districts || {}).slice(0, 24);
+    cards = districtNames.map(name => {
+      const d = C.districts[name];
+      const merchantCount = d.merchants || 0;
+      return {
+        isPosted: false,
+        title: name,
+        description: merchantCount + ' merchants · ' + (d.active_merchants || 0) + ' active · ' + (d.sku_availability_pct || 0) + '% SKU availability',
+        meta: ['Perfect Store: ' + (d.perfect_store_score_pct || 0) + '%', 'Movement: R' + (((d.product_movement_rands || 0) / 1_000_000).toFixed(1)) + 'm']
+      };
+    });
   } else if (cardsCfg.type === 'alerts') {
     cards = [
-      { title: '⚠ Low commercialisation', description: '3 districts below 15% target this period', meta: ['High', '2 hours ago'] },
-      { title: '⚠ Verification overdue', description: '12 sites awaiting inspection', meta: ['Medium', '1 day ago'] },
-      { title: '✓ Funding milestone reached', description: 'Quarterly disbursement target achieved', meta: ['Info', '3 days ago'] },
-      { title: '⚠ Compliance flag', description: '2 projects flagged for review', meta: ['High', '5 days ago'] },
-      { title: '✓ New programme published', description: 'Programme added to active portfolio', meta: ['Info', '1 week ago'] }
+      { title: '⚠ Low SKU availability', description: '4 districts below 55% SKU availability this period', meta: ['High', '2 hours ago'] },
+      { title: '⚠ Trader onboarding overdue', description: '12 merchants awaiting Business Passport completion', meta: ['Medium', '1 day ago'] },
+      { title: '✓ Perfect Store milestone', description: 'Cape Town reached 75% execution score', meta: ['Info', '3 days ago'] },
+      { title: '⚠ Sales rep coverage gap', description: '2 corridors below 60% visit completion', meta: ['High', '5 days ago'] }
     ];
   } else if (Array.isArray(cardsCfg.items)) {
     cards = cardsCfg.items;
   }
+
   if (!cards.length) {
     $('#cards-grid').innerHTML = '<div class="empty-state">Nothing to show yet.</div>';
     return;
@@ -1764,13 +1713,13 @@ function renderCards(C, item) {
     '</div>'
   ).join('');
   document.querySelectorAll('.card-delete').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.onclick = function(e) {
       e.stopPropagation();
       deleteProgramme(C.id, btn.dataset.progId);
       setTimeout(() => renderCards(C, item), 100);
-    });
+    };
   });
-  $('#cards-new').onclick = () => {
+  $('#cards-new').onclick = function() {
     if (cardsCfg.type === 'programmes') openPostPanel();
     else toast('New item form coming soon');
   };
@@ -1781,13 +1730,14 @@ function renderInfo(C, item) {
   $('#info-title').textContent = item.label;
   $('#info-sub').textContent = item.subtitle || (item.label + ' for ' + C.workspaceName);
   const bodies = {
-    settings: '<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Configure branding, terminology, data sources, and permissions.</p>',
+    settings: '<h3 style="margin:0 0 8px;font-size:14px">Workspace Settings</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Configure branding, terminology, data sources, and permissions for this workspace.</p>',
     users: '<h3 style="margin:0 0 8px;font-size:14px">User Management</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Manage who has access to this workspace. Assign roles (Executive, Manager, Officer, Viewer, Administrator).</p>',
-    sources: '<h3 style="margin:0 0 8px;font-size:14px">Data Sources</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Connected systems: manual entry, CSV import, VulaScan feed, external APIs.</p>',
-    audit: '<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace.</p>',
-    logs: '<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace.</p>'
+    sources: '<h3 style="margin:0 0 8px;font-size:14px">Data Sources</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Connected systems: VulaScan feed, CSV uploads, external APIs. All data stays in South Africa.</p>',
+    audit: '<h3 style="margin:0 0 8px;font-size:14px">Audit Logs</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Complete history of actions in this workspace. Retention: 90 days.</p>',
+    permissions: '<h3 style="margin:0 0 8px;font-size:14px">Data &amp; Permissions</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Role-based access controls determine which data each user can see. Merchants retain ownership of their private documents. Institutional clients see aggregated data only. POPIA compliant.</p>',
+    "merchant-onboarding": '<h3 style="margin:0 0 8px;font-size:14px">Merchant Onboarding Journey</h3><p style="font-size:12px;color:#70809b;line-height:1.6;margin-bottom:12px">The flow from invitation to verified merchant:</p><ol style="font-size:12px;color:#70809b;line-height:1.8;padding-left:20px"><li>Merchant receives invitation via SMS/WhatsApp/email</li><li>Registers through VulaScan</li><li>Captures business details and trading location</li><li>Completes Business Passport</li><li>Selects product categories and brands stocked</li><li>Sets data-sharing preferences</li><li>Gets linked to an authorised programme</li><li>Becomes visible in AVVA Insights reporting</li></ol>'
   };
-  $('#info-body').innerHTML = bodies[item.id] || '<h3 style="margin:0 0 8px;font-size:14px">' + item.label + '</h3><p style="font-size:12px;color:#70809b;line-height:1.6">Part of the AVVA Insights platform.</p>';
+  $('#info-body').innerHTML = bodies[item.id] || '<h3 style="margin:0 0 8px;font-size:14px">' + item.label + '</h3><p style="font-size:12px;color:#70809b;line-height:1.6">This section is part of the AVVA Insights platform.</p>';
 }
 
 /* ================= BOTTOM-LEFT ================= */
