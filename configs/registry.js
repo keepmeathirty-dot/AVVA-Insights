@@ -29,8 +29,7 @@ window.AVVA_WORKSPACES = [
     label: "KZN Social Development",
     description: "NGO support & community impact",
     configPath: "configs/social-development.js"
-  }
-  ,
+  },
   {
     id: "fmcg-intelligence",
     label: "Tiger Brands — FMCG Intelligence",
