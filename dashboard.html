@@ -357,22 +357,20 @@
 <script>
 /* ================================================================
    AVVA INSIGHTS — RENDER ENGINE
-   Demo mode: auto-session, no login required, GeoJSON maps.
+   Auto-login + backend sync for programmes.
    ================================================================ */
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
-/* Auto demo session */
 const session = {
-  email: 'demo@avva.demo',
+  email: 'admin@avva.demo',
   name: 'Demo User',
   role: 'Platform Admin',
   workspaces: { '*': 'admin' },
   signedInAt: Date.now()
 };
 
-/* Workspace list */
 const allWorkspaces = (window.AVVA_WORKSPACES || []).concat(
   window.AVVA_CSV ? window.AVVA_CSV.list().map(u => ({
     id: u.id, label: u.workspaceName,
@@ -388,19 +386,16 @@ if (!registry.length) {
   throw new Error('No workspaces');
 }
 
-/* Active workspace from URL */
 const params = new URLSearchParams(window.location.search);
 const requestedId = params.get('workspace');
 const activeEntry = registry.find(w => w.id === requestedId)
                  || registry.find(w => w.default)
                  || registry[0];
 
-/* Role rules */
 const OVERRIDE = sessionStorage.getItem('avva_role_override_' + activeEntry.id);
 const USER_ROLE = OVERRIDE || 'admin';
 const roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: 'Administrator', hide: [] };
 
-/* Loader */
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
@@ -414,6 +409,33 @@ function loadScript(src) {
 let CONFIG = null;
 
 (async function boot() {
+  /* ---- AUTO-LOGIN ---- */
+  if (!localStorage.getItem('avva_jwt')) {
+    try {
+      const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+      if (apiEndpoint && apiEndpoint.indexOf('http') === 0) {
+        console.log('[AVVA] No JWT found — attempting auto-login');
+        const loginRes = await fetch(apiEndpoint + '/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: 'admin@avva.demo', password: 'admin123' })
+        });
+        const loginData = await loginRes.json();
+        if (loginData.token) {
+          localStorage.setItem('avva_jwt', loginData.token);
+          console.log('[AVVA] Auto-login successful');
+        } else {
+          console.warn('[AVVA] Auto-login failed:', loginData.error || 'no token');
+        }
+      }
+    } catch (err) {
+      console.warn('[AVVA] Auto-login error:', err);
+    }
+  } else {
+    console.log('[AVVA] JWT already present');
+  }
+
+  /* ---- LOAD WORKSPACE CONFIG ---- */
   const uploaded = window.AVVA_CSV ? window.AVVA_CSV.load(activeEntry.id) : null;
   if (uploaded) {
     CONFIG = uploaded;
@@ -426,18 +448,17 @@ let CONFIG = null;
   }
   try { await loadScript(activeEntry.configPath); }
   catch (err) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ' + activeEntry.configPath + ' <br><br><a href="dashboard.html" style="color:#4f25d8">← Back</a></div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Could not load config: ' + activeEntry.configPath + '</div>';
     return;
   }
   CONFIG = window.AVVA_CONFIG;
   if (!CONFIG) {
-    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined. Workspace may be misconfigured.</div>';
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#dc2626">Config undefined.</div>';
     return;
   }
   renderAll(CONFIG);
 })();
 
-/* Toast */
 const toastEl = $('#toast');
 let toastTimer;
 function toast(msg) {
@@ -445,6 +466,56 @@ function toast(msg) {
   toastEl.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2600);
+}
+
+/* ============== BACKEND PROGRAMMES API ============== */
+function loadProgrammesFromBackend(workspaceId) {
+  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+  const token = localStorage.getItem('avva_jwt');
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return Promise.resolve([]);
+  return fetch(apiEndpoint + '/programmes?workspaceId=' + encodeURIComponent(workspaceId), {
+    headers: { 'Authorization': 'Bearer ' + token }
+  })
+  .then(r => r.json())
+  .then(data => {
+    const list = data.programmes || [];
+    if (list.length) {
+      localStorage.setItem('avva_programmes_' + workspaceId, JSON.stringify(list));
+    }
+    console.log('[AVVA] Loaded', list.length, 'programmes from backend');
+    return list;
+  })
+  .catch(err => { console.warn('[AVVA] Backend load failed:', err); return []; });
+}
+
+function saveProgrammeToBackend(workspaceId, programme) {
+  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+  const token = localStorage.getItem('avva_jwt');
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) {
+    console.warn('[AVVA] Cannot save to backend — no endpoint or token');
+    return Promise.resolve(null);
+  }
+  console.log('[AVVA] Saving programme to backend:', programme.name);
+  return fetch(apiEndpoint + '/programmes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify(Object.assign({ workspaceId: workspaceId }, programme))
+  })
+  .then(r => r.json())
+  .then(data => { console.log('[AVVA] Backend save response:', data); return data; })
+  .catch(err => { console.warn('[AVVA] Backend save failed:', err); return null; });
+}
+
+function deleteProgrammeFromBackend(workspaceId, progId) {
+  const apiEndpoint = (window.AVVA_API && window.AVVA_API.endpoint) || '';
+  const token = localStorage.getItem('avva_jwt');
+  if (!apiEndpoint || !token || apiEndpoint.indexOf('http') !== 0) return Promise.resolve(null);
+  return fetch(apiEndpoint + '/programmes', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ workspaceId: workspaceId, id: progId })
+  })
+  .catch(err => { console.warn('[AVVA] Backend delete failed:', err); });
 }
 
 /* ============== MAIN ============== */
@@ -482,7 +553,6 @@ function renderAll(C) {
   $('#user-name').innerHTML = 'Demo User<small>Administrator</small>';
   $('#role-label').textContent = roleRules.label.toUpperCase();
 
-  /* Role pill */
   const rolePill = $('#role-pill');
   const roleMenu = document.createElement('div');
   roleMenu.className = 'role-menu';
@@ -517,7 +587,6 @@ function renderAll(C) {
     window.location.href = 'index.html';
   };
 
-  /* Workspace switcher */
   const menu = $('#workspace-menu');
   menu.innerHTML = registry.map(w =>
     '<button data-ws="' + w.id + '" class="' + (w.id === C.id ? 'active' : '') + '">' +
@@ -537,9 +606,17 @@ function renderAll(C) {
   renderSidebar(C);
   renderCommandCentre(C);
   setupPostProgramme(C);
+
+  /* ---- Pull programmes from backend ---- */
+  loadProgrammesFromBackend(C.id).then(function(list) {
+    if (list && list.length) {
+      console.log('[AVVA] Refreshing programmes panel with', list.length, 'records from backend');
+      renderProgrammes(C);
+    }
+  });
 }
 
-/* ============== SIDEBAR (with role filtering) ============== */
+/* ============== SIDEBAR ============== */
 function renderSidebar(C) {
   const nav = $('#nav');
   nav.innerHTML = '';
@@ -714,7 +791,6 @@ function renderCommandCentre(C) {
     return '<div class="prog"><strong>' + name + '</strong><span>' + display + ' ' + C.primaryMetricLabel.toLowerCase() + '</span><div class="bar-line"><i style="width:' + ((val / maxVal) * 100).toFixed(0) + '%"></i></div></div>';
   }).join('');
 
-  /* MAP */
   const map = L.map('map', { center: C.map.center, zoom: C.map.zoom, zoomControl: false, scrollWheelZoom: true });
   L.control.zoom({ position: 'topright' }).addTo(map);
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -743,7 +819,6 @@ function renderCommandCentre(C) {
     const min = Math.min.apply(null, values);
     const max = Math.max.apply(null, values);
 
-    // Try GeoJSON resolver first
     if (window.AVVA_GEO && window.AVVA_SA_LOOKUP) {
       const level = window.AVVA_SA_LOOKUP.detectLevel(nms);
       window.AVVA_GEO.load(level).then(() => {
@@ -757,7 +832,6 @@ function renderCommandCentre(C) {
         drawFeatures(features, metricKey, min, max, true);
       });
     } else {
-      // Fallback: rectangles
       const features = nms.map(name => {
         const d = dataObj[name];
         const bounds = d.bounds || [[-29.5, 30.0], [-28.5, 31.0]];
@@ -969,10 +1043,10 @@ function renderCards(C, item) {
     cards = [
       { title: 'Quarterly Impact Report', description: 'Full overview of programme outcomes', meta: ['Generated 2 days ago', 'PDF'] },
       { title: 'Funding Disbursement Report', description: 'Breakdown of funding streams', meta: ['Generated 1 week ago', 'CSV'] },
-      { title: 'Beneficiary Demographics', description: 'Age, gender, and location distribution', meta: ['Generated 1 week ago', 'PDF'] },
-      { title: 'Compliance Audit Summary', description: 'Verification status across sites', meta: ['Generated 2 weeks ago', 'PDF'] },
-      { title: 'District Comparison', description: 'Side-by-side metrics across districts', meta: ['Generated 3 weeks ago', 'Excel'] },
-      { title: 'Annual Review 2025', description: 'Year-end summary and outcomes', meta: ['Generated 1 month ago', 'PDF'] }
+      { title: 'Beneficiary Demographics', description: 'Age, gender, location distribution', meta: ['Generated 1 week ago', 'PDF'] },
+      { title: 'Compliance Audit Summary', description: 'Verification status', meta: ['Generated 2 weeks ago', 'PDF'] },
+      { title: 'District Comparison', description: 'Side-by-side metrics', meta: ['Generated 3 weeks ago', 'Excel'] },
+      { title: 'Annual Review 2025', description: 'Year-end summary', meta: ['Generated 1 month ago', 'PDF'] }
     ];
   } else if (cfg.type === 'merchants') {
     cards = Object.keys(C.districts || {}).slice(0, 24).map(name => {
@@ -1022,14 +1096,14 @@ function renderInfo(C, item) {
   $('#info-title').textContent = item.label;
   $('#info-sub').textContent = item.subtitle || (item.label + ' for ' + C.workspaceName);
   const bodies = {
-    settings: '<h3>Workspace Settings</h3><p>Configure branding, terminology, data sources, and permissions.</p>',
-    users: '<h3>User Management</h3><p>Manage who has access to this workspace. Assign roles (Executive, Manager, Officer, Viewer, Administrator).</p>',
+    settings: '<h3>Workspace Settings</h3><p>Configure branding, terminology, data sources, permissions.</p>',
+    users: '<h3>User Management</h3><p>Manage who has access. Assign roles (Executive, Manager, Officer, Viewer, Administrator).</p>',
     sources: '<h3>Data Sources</h3><p>VulaScan feed, CSV uploads, external APIs. All data stays in South Africa.</p>',
-    audit: '<h3>Audit Logs</h3><p>Complete history of actions. Retention: 90 days.</p>',
-    permissions: '<h3>Data &amp; Permissions</h3><p>Merchants retain ownership of their private documents. Institutional clients see aggregated data only. POPIA compliant.</p>',
-    "merchant-onboarding": '<h3>Merchant Onboarding Journey</h3><ol><li>Merchant receives invitation</li><li>Registers through VulaScan</li><li>Captures business details</li><li>Completes Business Passport</li><li>Selects product categories</li><li>Sets data-sharing preferences</li><li>Gets linked to a programme</li><li>Becomes visible in AVVA</li></ol>'
+    audit: '<h3>Audit Logs</h3><p>Complete history. Retention: 90 days.</p>',
+    permissions: '<h3>Data &amp; Permissions</h3><p>Merchants retain ownership of private documents. Institutional clients see aggregated data only. POPIA compliant.</p>',
+    "merchant-onboarding": '<h3>Merchant Onboarding Journey</h3><ol><li>Invitation</li><li>Register via VulaScan</li><li>Capture business details</li><li>Complete Business Passport</li><li>Select product categories</li><li>Set data-sharing preferences</li><li>Link to programme</li><li>Visible in AVVA</li></ol>'
   };
-  $('#info-body').innerHTML = bodies[item.id] || '<h3>' + item.label + '</h3><p>Part of the AVVA Insights platform.</p>';
+  $('#info-body').innerHTML = bodies[item.id] || '<h3>' + item.label + '</h3><p>Part of AVVA Insights.</p>';
 }
 
 /* ============== BOTTOM LEFT ============== */
@@ -1095,6 +1169,7 @@ function deleteProgramme(workspaceId, progId) {
   if (!confirm('Delete programme "' + target.name + '"?')) return;
   const updated = existing.filter(p => p.id !== progId);
   savePostedProgrammes(workspaceId, updated);
+  deleteProgrammeFromBackend(workspaceId, progId);
   toast('Programme deleted');
   if (CONFIG) renderProgrammes(CONFIG);
 }
@@ -1152,6 +1227,7 @@ function setupPostProgramme(C) {
     const existing = getPostedProgrammes(C.id);
     existing.unshift(newProg);
     if (!savePostedProgrammes(C.id, existing)) { toast('Storage error'); return; }
+    saveProgrammeToBackend(C.id, newProg);
     toast('✓ Programme "' + name + '" published');
     closePanel();
     resetForm();
