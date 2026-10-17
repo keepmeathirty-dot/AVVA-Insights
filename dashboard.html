@@ -632,10 +632,17 @@ function renderAll(C) {
   if (old) old.remove();
   const roleMenu = document.createElement('div');
   roleMenu.className = 'role-menu';
+    // Filter roles by tenant's allowed roles (if specified)
+  const tenantRoles = (currentTenant && currentTenant.roles && currentTenant.roles.length)
+    ? currentTenant.roles
+    : ['Executive', 'Manager', 'Officer', 'Viewer', 'Administrator'];
+
   roleMenu.innerHTML = '<div class="hint">DEMO · PREVIEW AS ROLE</div>' +
-    Object.entries(window.AVVA_ROLE_RULES || {}).map(([key, r]) =>
-      '<button data-role="' + key + '" class="' + (key === USER_ROLE ? 'active' : '') + '">' + r.label + '</button>'
-    ).join('') +
+    Object.entries(window.AVVA_ROLE_RULES || {})
+      .filter(([key, r]) => tenantRoles.includes(r.label))
+      .map(([key, r]) =>
+        '<button data-role="' + key + '" class="' + (key === USER_ROLE ? 'active' : '') + '">' + r.label + '</button>'
+      ).join('') +
     '<div style="border-top:1px solid #e9edf3;margin-top:4px;padding-top:4px">' +
       '<button data-role="__reset__" style="color:#94a3b8;font-size:11px">↺ Reset to my role</button>' +
     '</div>';
