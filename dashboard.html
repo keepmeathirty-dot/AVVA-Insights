@@ -509,11 +509,34 @@ function apiCall(path, method, body) {
     })) : []
   );
 
+    // Fetch custom workspaces created by this tenant (CSV uploads)
+  try {
+    const wsRes = await apiCall('/workspaces/list');
+    if (wsRes.workspaces && Array.isArray(wsRes.workspaces)) {
+      wsRes.workspaces.forEach(function(ws) {
+        // Avoid duplicates
+        if (!allWorkspaces.find(w => w.id === ws.id)) {
+          allWorkspaces.push({
+            id: ws.id,
+            label: ws.workspaceName,
+            description: ws.pageSubtitle || 'Custom Dataset',
+            configPath: null,
+            _uploaded: true,
+            config: ws.config,
+            districts: ws.districts,
+            metrics: ws.metrics
+          });
+        }
+      });
+    }
+  } catch (e) { console.warn('[AVVA] custom ws fetch failed', e); }
+
+  // Build registry (allow tenant core workspaces + custom workspaces)
   if (currentTenant && currentTenant.workspaces && currentTenant.workspaces.includes('*')) {
     registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: 'admin' }));
   } else if (currentTenant && currentTenant.workspaces) {
     registry = allWorkspaces
-      .filter(w => currentTenant.workspaces.includes(w.id))
+      .filter(w => currentTenant.workspaces.includes(w.id) || w._uploaded)
       .map(w => Object.assign({}, w, { userRole: 'admin' }));
   } else {
     registry = allWorkspaces.map(w => Object.assign({}, w, { userRole: 'admin' }));
@@ -534,7 +557,8 @@ function apiCall(path, method, body) {
   roleRules = (window.AVVA_ROLE_RULES || {})[USER_ROLE] || { label: 'Administrator', hide: [] };
 
   /* Load workspace config */
-  const uploaded = window.AVVA_CSV ? window.AVVA_CSV.load(activeEntry.id) : null;
+    // Try to find the workspace in our registry (which now includes cloud-saved ones)
+  const uploaded = activeEntry._uploaded ? (activeEntry.config || window.AVVA_CSV.load(activeEntry.id)) : null;
   if (uploaded) { CONFIG = uploaded; renderAll(CONFIG); return; }
 
   if (!activeEntry.configPath) {
@@ -1545,12 +1569,25 @@ function handleCSVParse() {
 
 function handleGenerate(C) {
   if (!__pendingConfig) { toast('No parsed data'); return; }
-  if (!window.AVVA_CSV.save(__pendingConfig)) { toast('Could not save'); return; }
-  toast('✓ Workspace generated');
-  setTimeout(() => {
-    const tp = currentTenant ? '&tenant=' + currentTenant.id : '';
-    window.location.href = 'dashboard.html?workspace=' + __pendingConfig.id + tp;
-  }, 600);
+  
+  toast('Saving workspace...');
+  
+  // Save to DynamoDB first
+  apiCall('/workspaces', 'POST', __pendingConfig).then(res => {
+    if (res.error) {
+      toast('Error saving to cloud: ' + res.error);
+      return;
+    }
+    
+    // Save to localstorage as well for quick loading
+    window.AVVA_CSV.save(__pendingConfig);
+    
+    toast('✓ Workspace generated');
+    setTimeout(() => {
+      const tp = currentTenant ? '&tenant=' + currentTenant.id : '';
+      window.location.href = 'dashboard.html?workspace=' + __pendingConfig.id + tp;
+    }, 600);
+  });
 }
 
 function renderUploadsView(C) {
