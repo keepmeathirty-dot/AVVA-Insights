@@ -365,6 +365,17 @@
       <div class="field"><label>Tenant ID * (lowercase, no spaces)</label><input id="tf-id" placeholder="e.g. kznhealth" pattern="[a-z][a-z0-9]*" required></div>
       <div class="field"><label>Institution name *</label><input id="tf-label" placeholder="e.g. KwaZulu-Natal Department of Health" required></div>
       <div class="field"><label>Short name</label><input id="tf-short" placeholder="e.g. KZN Health"></div>
+            <div class="field">
+        <label>Workspace Template</label>
+        <select id="tf-template" style="margin-bottom: 10px;">
+          <option value="custom">Custom Selection</option>
+          <option value="agriculture">Agriculture (KZN DoA)</option>
+          <option value="fmcg">FMCG (Tiger Brands)</option>
+          <option value="healthcare">Healthcare (KZN Health)</option>
+          <option value="manufacturing">Manufacturing (KZN Mfg)</option>
+          <option value="social">Social Development (KZN Social)</option>
+        </select>
+      </div>
       <div class="field">
         <label>Workspaces</label>
         <div id="tf-workspaces" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px"></div>
@@ -854,7 +865,34 @@ function openTenantPanel(C) {
   document.getElementById('tf-admin-email').value = '';
   document.getElementById('tf-phone').value = '';
   document.querySelectorAll('#tf-workspaces input').forEach(cb => cb.checked = false);
+    // Handle template selection
+  const templateSelect = document.getElementById('tf-template');
+  templateSelect.value = 'custom';
+  templateSelect.onchange = function() {
+    const template = this.value;
+    const wsCheckboxes = document.querySelectorAll('#tf-workspaces input');
+    
+    // Reset all to false first
+    wsCheckboxes.forEach(cb => cb.checked = false);
 
+    if (template === 'custom') return;
+
+    // Auto-check based on template
+    wsCheckboxes.forEach(cb => {
+      if (template === 'agriculture' && cb.value === 'kzn-doa') cb.checked = true;
+      if (template === 'fmcg' && cb.value === 'fmcg-intelligence') cb.checked = true;
+      if (template === 'healthcare' && cb.value === 'healthcare-fund') cb.checked = true;
+      if (template === 'manufacturing' && cb.value === 'manufacturing-fund') cb.checked = true;
+      if (template === 'social' && cb.value === 'social-development') cb.checked = true;
+    });
+
+    // Auto-set default workspace
+    const defaultSelect = document.getElementById('tf-default');
+    if (wsCheckboxes[0] && template !== 'custom') {
+      const checked = Array.from(wsCheckboxes).find(c => c.checked);
+      if (checked) defaultSelect.value = checked.value;
+    }
+  };
   panel.classList.add('open');
   backdrop.classList.add('show');
 
